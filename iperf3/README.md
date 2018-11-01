@@ -39,3 +39,10 @@ systemctl start iperf3
 ```
 
 A reboot should show that it is still running.
+
+Then you need to tell the firewall to allow iperf3 traffic through:
+
+sudo -s
+firewall-cmd --add-port=5201/tcp --permanent
+firewall-cmd --add-port=5201/udp --permanent
+firewall-cmd --reload
