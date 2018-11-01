@@ -1,0 +1,7 @@
+# Run scripts automatically
+#
+* * * * * /home/jsquyres/git/mercy/linux/every1.sh
+0,5,10,15,20,25,30,35,40,45,50,55 * * * * /home/jsquyres/git/mercy/linux/every5.sh
+0,15,30,45 * * * * /home/jsquyres/git/mercy/linux/every15.sh
+1 * * * * /home/jsquyres/git/mercy/linux/every60.sh
+2 0 * * * /home/jsquyres/git/mercy/linux/every24h.sh
