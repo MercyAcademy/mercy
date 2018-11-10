@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if test ! -d "$BASE"; then
+    echo "Cannot find the BASE directory!"
+    exit 1
+fi
+
+cd $base/..
+git pull --rebase --quiet
