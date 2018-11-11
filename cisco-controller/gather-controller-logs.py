@@ -21,7 +21,7 @@ from pprint import pformat
 prompt = 'Cisco Controller'
 default_controllers = {
     'CTS2504-1' : { 'name' : 'CT2504-1', 'prompt_name': prompt,
-                 'ip' : '192.168.81.253' },
+                    'ip' : '192.168.81.253' },
     'CTS2504-2' : { 'name' : 'CT2504-2', 'prompt_name': prompt,
                     'ip' : '192.168.81.252' },
 }
@@ -81,7 +81,7 @@ def setup_logging(args):
 ################################################################
 
 def connect_to_controllers(controllers, args, log):
-    connections = list()
+    connections = dict()
     for _, data in controllers.items():
         log.info("Connecting to controller '{name}' at {user}@{ip}..."
                  .format(name=data['name'], user=args.user, ip=data['ip']))
@@ -106,7 +106,7 @@ def connect_to_controllers(controllers, args, log):
         c['expect'] = child
         c['prompt'] = prompt
 
-        connections.append(c)
+        connections[data['name']] = c
 
     return connections
 
@@ -132,6 +132,24 @@ Number of WLANs.................................. 1
 WLAN ID  WLAN Profile Name / SSID               Status    Interface Name
 -------  -------------------------------------  --------  --------------------
 1        apsso / apsso                          Disabled  management
+
+.253:
+WLAN ID  WLAN Profile Name / SSID               Status    Interface Name
+-------  -------------------------------------  --------  --------------------
+1        mercy1 / mercy1                        Enabled   mercy - internal
+2        Wireless Guest Network / Mercy-guest   Enabled   wireless guest
+3        MercyStudent / MercyStudent            Enabled   mercy - student
+4        AppleTV / Apple-TV1                    Disabled  apple-tv
+5        Mercy-Guest / Mercy-Guest              Disabled  mercy - student
+
+.252:
+WLAN ID  WLAN Profile Name / SSID               Status    Interface Name
+-------  -------------------------------------  --------  --------------------
+1        mercy1 / mercy1                        Enabled   mercy - internal
+3        MercyStudent / MercyStudent            Enabled   mercy - student
+4        Apple-TV / Apple-TV1                   Disabled  apple-tv
+5        Mercy-Guest / Mercy-Guest              Disabled  mercy - student
+6        Wireless Guest Network / Mercy-guest   Enabled   wireless guest
 
 '''
     log.info("Querying WLAN IDs on controller '{name}' ({ip})..."
@@ -168,6 +186,8 @@ WLAN ID  WLAN Profile Name / SSID               Status    Interface Name
         # corresponding index SQL table field names!
         parts = line[9:45].split("/")
         wid = {
+            'controller'      : controller,
+
             'wlan_id'         : int(line[0:6]),
             'profile_name'    : parts[0].strip(),
             'ssid'            : parts[1].strip(),
@@ -183,7 +203,7 @@ WLAN ID  WLAN Profile Name / SSID               Status    Interface Name
 
 #---------------------------------------------------------------
 
-def gather_aps(controller, aps, log):
+def gather_aps(controller, log):
     # show ap summary
     '''
 (Cisco Controller) >show ap summary
@@ -256,6 +276,7 @@ AP-President         2     AIR-CAP1602I-A-K9     78:ba:f9:e6:c6:43  2nd floor co
             break
 
     # Ok, we have all the lines now
+    aps     = dict()
     inside  = False
     for line in lines:
         line = line.decode('utf-8')
@@ -283,26 +304,29 @@ AP-President         2     AIR-CAP1602I-A-K9     78:ba:f9:e6:c6:43  2nd floor co
         # NOTE: These dictionary key names must match their
         # corresponding index SQL table field names!
         ap = {
-            'name'     : line[0:17].strip(),
-            'slots'    : int(line[20:24]),
-            'ap_model' : line[27:46].strip(),
-            'mac'      : line[49:65].strip(),
-            'location' : line[68:83].strip(),
-            'country'  : line[86:92].strip(),
+            'name'          : line[0:17].strip(),
+            'slots'         : int(line[20:24]),
+            'ap_model'      : line[27:46].strip(),
+            'mac'           : line[48:66].strip(),
+            'location'      : line[68:84].strip(),
+            'country'       : line[86:92].strip(),
 
             # These fields are not in the index SQL table (and that's
             # ok), so they can be named whatever we want.
-            'ip'       : line[95:109].strip(),
-            'clients'  : int(line[112:118]),
+            'controller'    : controller,
+            'ip'            : line[95:109].strip(),
+            'clients'       : int(line[112:118]),
         }
         log.debug("Got the following AP: {ap}"
                   .format(ap=pformat(ap)))
 
         aps[ap['name']] = ap
 
+    return aps
+
 #---------------------------------------------------------------
 
-def gather_clients(controller, wlans, aps, clients, log):
+def gather_clients(controller, log):
     # show client ap <-- shows clients on a specific AP
     '''
 (Cisco Controller) >show client ap 802.11b AP1
@@ -351,7 +375,8 @@ Would you like to display more entries? (y/n) y
 '''
     log.info("Querying clients on controller '{name}' ({ip})..."
              .format(name=controller['name'], ip=controller['ip']))
-    log.debug("All the APs we found:\n{aps}".format(aps=pformat(aps)))
+    log.debug("All the APs we found on this controller:\n{aps}"
+              .format(aps=pformat(controller['aps'])))
 
     e = controller['expect']
     e.sendline('show client summary')
@@ -370,9 +395,10 @@ Would you like to display more entries? (y/n) y
             log.debug("Got end of client list")
             break
 
-    protocol_re = re.compile('(.*)\((.+)\)')
+    protocol_re = re.compile('(.*)\(([\d\.]+) ')
 
     # Ok, we have all the lines now
+    clients = dict()
     inside  = False
     for line in lines:
         line = line.decode('utf-8')
@@ -403,7 +429,7 @@ Would you like to display more entries? (y/n) y
             frequency = float(parts.group(2))
         else:
             protocol  = protocol_parts
-            frequency = ''
+            frequency = '0'
 
         ap_name = line[18:36].strip()
         wlan_id = int(line[55:59])
@@ -411,21 +437,23 @@ Would you like to display more entries? (y/n) y
         # NOTE: These dictionary key names must match their
         # corresponding index SQL table field names!
         client = {
-            'mac'       : line[0:16].strip(),
+            'mac'       : line[0:17].strip(),
 
             # These fields are not in the index SQL table (and that's
             # ok), so they can be named whatever we want.
-            'ap_name'   : aps[ap_name],
             'slot'      : int(line[37:39]),
             'status'    : line[41:53].strip(),
-            'wlan_id'   : wlans[wlan_id],
             'auth'      : line[61:64].strip(),
             'protocol'  : protocol,
             'frequency' : frequency,
             'port'      : int(line[83:86]),
             'wired'     : line[88:92],
-            'pmipv6'    : line[94:99],
-            'role'      : line[101:116],
+            'pmipv6'    : line[94:99].strip(),
+            'role'      : line[101:116].strip(),
+
+            # These are references into other dictionaries
+            'ap'        : controller['aps'][ap_name],
+            'wlan'      : controller['wlans'][wlan_id],
         }
         log.debug("Got the following client: {client}"
                   .format(client=pformat(client)))
@@ -437,89 +465,138 @@ Would you like to display more entries? (y/n) y
 ################################################################
 
 def gather_data_fake(args, log):
-    wlans       = {
-        1: { 'wlan_id' : 1, 'profile_name' : 'fake1', 'ssid' : 'fake1',
-             'enabled' : 'Enabled', 'interface' : 'management' },
-        2: { 'wlan_id' : 2, 'profile_name' : 'fake2', 'ssid' : 'fake2',
-             'enabled' : 'Enabled', 'interface' : 'management' },
-    }
-    aps         = {
-        'fake_ap1' : { 'name' : 'fake_ap1', 'slots' : 2,
-                       'ap_model' : 'shiny',
-                       'mac' : '11:22:33:44:55:66', 'location' : 'Hallway',
-                       'country' : 'US', 'ip' : '192.168.1.100',
-                       'clients' : 13 },
-        'fake_ap2' : { 'name' : 'fake_ap2', 'slots' : 2,
-                       'ap_model' : 'dull',
-                       'mac' : '11:22:33:44:55:77', 'location' : 'Room',
-                       'country' : 'US', 'ip' : '192.168.1.101',
-                       'clients' : 34 },
-    }
-    clients     = {
-        '22:33:44:55:66:77' : { 'mac' : '22:33:44:55:66:77',
-                                'ap_name' : 'fake_ap1', 'slot' : 2,
-                                'status' : 'Associated', 'wlan_id' : 2,
-                                'auth' : 'Yes',
-                                'protocol' : 'ac', 'frequency' : 5,
-                                'port' : 13,
-                                'wired' : 'N/A', 'pmipv6' : 'No',
-                                'role' : 'Local' },
-        '22:33:44:55:66:88' : { 'mac' : '22:33:44:55:66:88',
-                                'ap_name' : 'fake_ap2', 'slot' : 2,
-                                'status' : 'Associated', 'wlan_id' : 1,
-                                'auth' : 'Yes',
-                                'protocol' : 'n', 'frequency' : 2.4,
-                                'port' : 13,
-                                'wired' : 'N/A', 'pmipv6' : 'No',
-                                'role' : 'Local' },
-    }
+    controllers = default_controllers.copy()
 
-    return default_controllers, wlans, aps, clients
+    i = 0
+    for _, controller in controllers.items():
+        i = i + 1
+
+        wlan1 = 1 + i
+        wlan2 = 2 + i
+        fake_wlans       = {
+            wlan1: { 'wlan_id' : wlan1,
+                     'profile_name' : 'fake1',
+                     'ssid' : 'fake1',
+                     'enabled' : 'Enabled',
+                     'interface' : 'management',
+
+                     'controller' : controller,
+            },
+            wlan2: { 'wlan_id' : wlan2,
+                     'profile_name' : 'fake2',
+                     'ssid' : 'fake2',
+                     'enabled' : 'Enabled',
+                     'interface' : 'management',
+
+                     'controller' : controller,
+            },
+        }
+        controller['wlans'] = fake_wlans
+
+        ap1 = 'fake_ap1-controller-{i}'.format(i=i)
+        ap2 = 'fake_ap2-controller-{i}'.format(i=i)
+        fake_aps         = {
+            ap1 : { 'name' : ap1,
+                    'slots' : 2,
+                    'ap_model' : 'shiny',
+                    'mac' : '11:22:33:44:55:{x}'.format(x=66+i),
+                    'location' : 'Hallway',
+                    'country' : 'US',
+                    'ip' : '192.168.{i}.{x}'.format(i=i, x=100+i),
+                    'clients' : 13 + 1,
+
+                    'controller' : controller,
+            },
+            ap2 : { 'name' : ap2,
+                    'slots' : 2,
+                    'ap_model' : 'dull',
+                    'mac' : '11:22:33:44:55:{x}'.format(x=77+i),
+                    'location' : 'Room',
+                    'country' : 'US',
+                    'ip' : '192.168.{i}.{x}'.format(i=i, x=101+i),
+                    'clients' : 34 + 1,
+
+                    'controller' : controller,
+            },
+        }
+        controller['aps'] = fake_aps
+
+        mac1 = '22:33:44:55:66:{x}'.format(x=77+i)
+        mac2 = '22:33:44:55:66:{x}'.format(x=88+i)
+
+        fake_clients     = {
+            mac1 : { 'mac' : mac1,
+                     'ap_name' : ap1,
+                     'slot' : 2,
+                     'status' : 'Associated',
+                     'wlan_id' : wlan1,
+                     'auth' : 'Yes',
+                     'protocol' : 'ac',
+                     'frequency' : 5,
+                     'port' : 13,
+                     'wired' : 'N/A',
+                     'pmipv6' : 'No',
+                     'role' : 'Local',
+
+                     'ap' : controller['aps'][ap1],
+                     'wlan' : controller['wlans'][wlan1],
+                     'controller' : controller,
+            },
+            mac2 : { 'mac' : mac2,
+                     'ap_name' : ap2,
+                     'slot' : 2,
+                     'status' : 'Associated',
+                     'wlan_id' : wlan2,
+                     'auth' : 'Yes',
+                     'protocol' : 'n',
+                     'frequency' : 2.4,
+                     'port' : 13,
+                     'wired' : 'N/A',
+                     'pmipv6' : 'No',
+                     'role' : 'Local',
+
+                     'ap' : controller['aps'][ap2],
+                     'wlan' : controller['wlans'][wlan2],
+                     'controller' : controller,
+            },
+        }
+        controller['clients'] = fake_clients
+
+    return controllers
 
 #---------------------------------------------------------------
 
 def gather_data_real(args, log):
     controllers = connect_to_controllers(default_controllers, args, log)
 
-    # We already know that the WLAN IDs are the same between all of
-    # our controllers.  So just obtain them from one of the
-    # controllers.
-    wlans = gather_wlans(controllers[1], log)
-
     # For each controller, download a bunch of data.
-    aps     = dict()
-    clients = dict()
     for _, controller in controllers.items():
-        gather_aps(controller=controller, aps=aps, log=log)
-        gather_clients(controller=controller, wlans=wlans,
-                       aps=aps, clients=clients, log=log)
+        wlans = gather_wlans(controller=controller, log=log)
+        controller['wlans'] = wlans
+
+        aps = gather_aps(controller=controller, log=log)
+        controller['aps'] = aps
+
+        clients = gather_clients(controller=controller, log=log)
+        controller['clients'] = clients
 
     disconnect_from_controllers(controllers, log)
 
-    return controllers, wlans, aps, clients
+    return controllers
 
 #---------------------------------------------------------------
 
 def gather_data(args, log):
     if args.fake:
-        controllers, wlans, aps, clients = gather_data_fake(args, log)
+        controllers = gather_data_fake(args, log)
     else:
-        controllers, wlans, aps, clients = gather_real_fake(args, log)
+        controllers = gather_data_real(args, log)
 
     log.debug("=================================================")
-    log.debug("Gathered Controllers")
+    log.debug("All the gathered data")
     log.debug(pformat(controllers))
-    log.debug("=================================================")
-    log.debug("Gathered WLANs")
-    log.debug(pformat(wlans))
-    log.debug("=================================================")
-    log.debug("Gathered APs")
-    log.debug(pformat(aps))
-    log.debug("=================================================")
-    log.debug("Gathered Clients")
-    log.debug(pformat(clients))
 
-    return controllers, wlans, aps, clients
+    return controllers
 
 ################################################################
 
@@ -542,19 +619,6 @@ def db_disconnect(cur):
 # SQL table schemas
 def db_get_schemas():
     schemas = {
-        'wlans' : '''
-CREATE TABLE wlans (
-       id integer primary key autoincrement,
-       timestamp datetime default current_timestamp,
-
-       wlan_id integer,
-       profile_name char(32),
-       ssid char(32),
-       enabled integer,
-       interface char(20)
-)
-''',
-
         'controllers' : '''
 CREATE TABLE controllers (
        id integer primary key autoincrement,
@@ -565,10 +629,27 @@ CREATE TABLE controllers (
 )
 ''',
 
+        'wlans' : '''
+CREATE TABLE wlans (
+       id integer primary key autoincrement,
+       timestamp datetime default current_timestamp,
+
+       controller_id integer,
+
+       wlan_id integer,
+       profile_name char(32),
+       ssid char(32),
+       enabled integer,
+       interface char(20)
+)
+''',
+
         'aps' : '''
 CREATE TABLE aps (
        id integer primary key autoincrement,
        timestamp datetime default current_timestamp,
+
+       controller_id integer,
 
        name char(20),
        ap_model char(20),
@@ -703,15 +784,26 @@ def db_insert(cur, table_name, field_names, values, log):
     sql2  = ') VALUES ('
     first = True
     for fname in field_names:
+        # Special case: if the field name is 'controller_id', get the
+        # right value for it.  There's a chicken and egg issue that we
+        # don't have the controller's database index values at the
+        # beginning of time, but we do have it by the time we go
+        # insert these values in the other databases.
+        the_value = None
+        if fname == 'controller_id' and 'controller' in values:
+            the_value = values['controller']['db_id']
+
         # If we don't have this field in the values, skip it
-        if fname not in values:
+        elif fname not in values:
             continue
 
         if not first:
             sql  += ','
             sql2 += ','
         sql  += fname
-        sql2 += '"{value}"'.format(value=values[fname])
+        if not the_value:
+            the_value = values[fname]
+        sql2 += '"{value}"'.format(value=the_value)
 
         first = False
 
@@ -719,10 +811,14 @@ def db_insert(cur, table_name, field_names, values, log):
 
     log.debug("Executing SQL insert: {sql}".format(sql=sql))
     cur.execute(sql)
+    db_id = cur.lastrowid
     cur.connection.commit()
 
+    # JMS values=values outputs the entire controllers dict
     log.info("Added to {name} index table: {values}"
-             .format(name=table_name, values=values))
+             .format(name=table_name, values=sql))
+
+    return db_id
 
 #---------------------------------------------------------------
 
@@ -739,8 +835,10 @@ def compare_index_table(cur, db, table_name, gathered_data, log):
         for _, table_row in table['rows'].items():
             # If we have any rows, assume that we match, unless proven
             # otherwise (below).
-            log.debug("Comparing: {a} to {b}"
-                      .format(a=gathered_row, b=table_row))
+            # JMS This is computationally very expensive (probably
+            # because rows point back to the controller...?)
+            #log.debug("Comparing: {a} to {b}"
+            #          .format(a=gathered_row, b=table_row))
 
             matched = True
             for fname in table_field_names:
@@ -761,32 +859,45 @@ def compare_index_table(cur, db, table_name, gathered_data, log):
             if matched:
                 break
 
+        db_id = None
         if matched:
-            log.debug("This index item is already in the database: {foo}"
-                     .format(foo=gathered_row))
+            # JMS computationally expensive
+            #log.debug("This index item is already in the database: {foo}"
+            #         .format(foo=gathered_row))
+            db_id = table_row['id']
+
         else:
-            log.debug("Need to insert this index item into the database: {foo}"
-                     .format(foo=gathered_row))
-            db_insert(cur=cur, table_name=table_name,
-                      field_names=table_field_names, values=gathered_row,
-                      log=log)
+            # JMS computationally expensive
+            #log.debug("Need to insert this index item into the database: {foo}"
+            #         .format(foo=gathered_row))
+            db_id = db_insert(cur=cur, table_name=table_name,
+                              field_names=table_field_names,
+                              values=gathered_row,
+                              log=log)
             updated = True
+
+        gathered_row['db_id'] = db_id
 
     return updated
 
 #---------------------------------------------------------------
 
-def db_update_index_tables(cur, db, controllers, wlans, aps, clients, log):
+def db_update_index_tables(cur, db, controllers, log):
     # Update the index tables
     updated = False
-    updated |= compare_index_table(cur=cur, db=db, table_name='wlans',
-                                   gathered_data=wlans, log=log)
     updated |= compare_index_table(cur=cur, db=db, table_name='controllers',
                                    gathered_data=controllers, log=log)
-    updated |= compare_index_table(cur=cur, db=db, table_name='aps',
-                                   gathered_data=aps, log=log)
-    updated |= compare_index_table(cur=cur, db=db, table_name='clients',
-                                   gathered_data=clients, log=log)
+
+    for _, controller in controllers.items():
+        updated |= compare_index_table(cur=cur, db=db, table_name='wlans',
+                                       gathered_data=controller['wlans'],
+                                       log=log)
+        updated |= compare_index_table(cur=cur, db=db, table_name='aps',
+                                       gathered_data=controller['aps'],
+                                       log=log)
+        updated |= compare_index_table(cur=cur, db=db, table_name='clients',
+                                       gathered_data=controller['clients'],
+                                       log=log)
 
     return updated
 
@@ -813,73 +924,69 @@ def compare_client(gathered_client, db_client):
 
 #---------------------------------------------------------------
 
-def correlate(db, aps, wlans, clients, log):
+def correlate(db, controllers, log):
     log.debug("Correlating gathered data to database index values...")
 
-    def _correlate(gathered_data, db_table, field_name, compare_fn, log):
+    def _correlate(gathered_data, db_table, compare_fn, log):
+        index_field = 'db_id'
         for _, gathered_row in gathered_data.items():
-            gathered_row[field_name] = None
+            # If we DB inserted in this run, we already have the DB ID
+            # on the gathered data.
+            if index_field in gathered_row:
+                continue
+
+            gathered_row[index_field] = None
             for _, db_row in db_table['rows'].items():
                 if compare_fn(gathered_row, db_row):
-                    gathered_row[field_name] = db_row['id']
+                    gathered_row[index_field] = db_row['id']
                     break
 
     # Correlate AP, WLAN, and clients to their database index values.
     # This is done through multiple layers of indirection in the above
     # embedded function and passing function pointers for the actual
     # comparisons.  Not for the meek!
-    _correlate(aps, db['aps'], 'db_ap_index', compare_ap, log)
-    _correlate(wlans, db['wlans'], 'db_wlan_index', compare_wlan, log)
-    _correlate(clients, db['clients'], 'db_client_index', compare_client, log)
-
-    # Clients also reference WLANs and APs, so get their database
-    # indexes, too.  We nicely setup the gathered WLAN/AP data indexed
-    # on how the client sees them, so finding these DB indexes is now
-    # trivial.
-    for _, client in clients.items():
-        wlan_id = int(client['wlan_id'])
-        client['db_wlan_index'] = wlans[wlan_id]['db_wlan_index']
-
-        ap_name = client['ap_name']
-        client['db_ap_index'] = aps[ap_name]['db_ap_index']
-
-    log.debug(pformat(clients))
+    for _, controller in controllers.items():
+        _correlate(controller['aps'], db['aps'], compare_ap, log)
+        _correlate(controller['wlans'], db['wlans'], compare_wlan, log)
+        _correlate(controller['clients'], db['clients'], compare_client, log)
 
 ################################################################
 
 # I could probably write this more generally, but the "index" fields
 # make this propsect a little wonky.  So just leave all the fields /
 # values hard-coded.
-def write_db_ap_sightings(cur, db, gathered_aps, log):
+def write_db_ap_sightings(cur, db, gathered_aps, cname, log):
     for _, gathered_ap in gathered_aps.items():
-        sql = ('INSERT INTO ap_sightings (ap_index,ip,num_clients) VALUES ({ap_index},"{ip}",{num_clients})'
-               .format(ap_index=gathered_ap['db_ap_index'],
+        sql = ('INSERT INTO ap_sightings (ap_index,ip,num_clients) ' +
+               'VALUES ({ap_index},"{ip}",{num_clients})'
+               .format(ap_index=gathered_ap['db_id'],
                        ip=gathered_ap['ip'],
                        num_clients=gathered_ap['clients']))
         log.debug("About to insert AP sighting: {sql}".format(sql=sql))
         cur.execute(sql)
         cur.connection.commit()
 
-    log.info("Wrote {num} new AP sightings"
-             .format(num=len(gathered_aps)))
+    log.info("Wrote {num} new AP sightings on {cname}"
+             .format(num=len(gathered_aps), cname=cname))
 
 # I could probably write this more generally, but the "index" fields
 # make this propsect a little wonky.  So just leave all the fields /
 # values hard-coded.
-def write_db_client_sightings(cur, db, gathered_clients, log):
+def write_db_client_sightings(cur, db, gathered_clients, cname, log):
     for _, gathered_client in gathered_clients.items():
-        sql = ('INSERT INTO client_sightings (client_index,ap_index,wlan_index,protocol_802dot11,frequency_ghz) VALUES ({client_index},{ap_index},{wlan_index},"{protocol}",{frequency})'
-               .format(client_index=gathered_client['db_client_index'],
-                       ap_index=gathered_client['db_ap_index'],
-                       wlan_index=gathered_client['db_wlan_index'],
+        sql = ('INSERT INTO client_sightings (client_index,ap_index,wlan_index,protocol_802dot11,frequency_ghz) ' +
+               'VALUES ({client_index},{ap_index},{wlan_index},"{protocol}",{frequency})'
+               .format(client_index=gathered_client['db_id'],
+                       ap_index=gathered_client['ap']['db_id'],
+                       wlan_index=gathered_client['wlan']['db_id'],
                        protocol=gathered_client['protocol'],
                        frequency=gathered_client['frequency']))
         log.debug("About to insert client sighting: {sql}".format(sql=sql))
         cur.execute(sql)
         cur.connection.commit()
 
-    log.info("Wrote {num} new client sightings"
-             .format(num=len(gathered_clients)))
+    log.info("Wrote {num} new client sightings on {cname}"
+             .format(num=len(gathered_clients), cname=cname))
 
 ################################################################
 
@@ -888,7 +995,7 @@ def main():
     log  = setup_logging(args)
 
     # Go gather the data
-    controllers, wlans, aps, clients = gather_data(args=args, log=log)
+    controllers = gather_data(args=args, log=log)
 
     # Connect to the database
     cur = db_connect(filename=args.db, log=log)
@@ -903,27 +1010,35 @@ def main():
     # Update the index tables with the data we gathered
     updated = db_update_index_tables(cur=cur, db=db,
                                      controllers=controllers,
-                                     wlans=wlans,
-                                     aps=aps,
-                                     clients=clients,
                                      log=log)
 
-    # Once the index tables are updates -- although this is a bit
-    # wasteful / inefficient -- read in the database again.  It's the
-    # simplest way of getting all the data that we may have just
-    # inserted into the index tables / refreshing our data structures.
-    if updated:
-        log.debug("Database has changed -- re-reading tables")
-        db = db_read_tables(cur=cur, schemas=schemas, log=log)
+    # JMS I don't think this is necessary any more, because
+    # db_update_index_tables() writes db_id values to all the hashes.
+    if False:
+        # Once the index tables are updated -- although this is a bit
+        # wasteful / inefficient -- read in the database again.  It's the
+        # simplest way of getting all the data that we may have just
+        # inserted into the index tables / refreshing our data structures.
+        if updated:
+            log.debug("Database has changed -- re-reading tables")
+            db = db_read_tables(cur=cur, schemas=schemas, log=log)
 
-    # Correlate gathered APs, WLANs, and clients to their database
-    # indexes
-    correlate(db=db, aps=aps, wlans=wlans, clients=clients, log=log)
+        # Correlate gathered APs, WLANs (on the controllers), and clients
+        # to their database indexes
+        log.debug("JMS BEFORE: {x}".format(x=pformat(controllers)))
+        correlate(db=db, controllers=controllers, log=log)
+        log.debug("JMS AFTER: {x}".format(x=pformat(controllers)))
 
     # Write all new sightings of APs and clients
-    write_db_ap_sightings(cur=cur, db=db, gathered_aps=aps, log=log)
-    write_db_client_sightings(cur=cur, db=db, gathered_clients=clients,
+    for _, controller in controllers.items():
+        write_db_ap_sightings(cur=cur, db=db,
+                              gathered_aps=controller['aps'],
+                              cname=controller['name'],
                               log=log)
+        write_db_client_sightings(cur=cur, db=db,
+                                  gathered_clients=controller['clients'],
+                                  cname=controller['name'],
+                                  log=log)
 
     # Close out the database
     db_disconnect(cur)
