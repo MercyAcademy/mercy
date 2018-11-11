@@ -5,5 +5,5 @@ if test ! -d "$BASE"; then
     exit 1
 fi
 
-cd $base/..
+cd $BASE/..
 git pull --rebase --quiet
