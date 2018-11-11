@@ -60,6 +60,7 @@ import mimetypes
 
 from pprint import pprint
 
+from apiclient.discovery import build
 from apiclient.http import MediaFileUpload
 from oauth2client import tools
 from oauth2client.file import Storage
@@ -101,16 +102,14 @@ def gd_load_app_credentials(app_id_file, log):
 
 #-------------------------------------------------------------------
 
-def gd_load_user_credentials(scope, app_cred, log):
+def gd_load_user_credentials(scope, app_cred, user_cred_filename, log):
     # Get user consent
     client_id       = app_cred['installed']['client_id']
     client_secret   = app_cred['installed']['client_secret']
     flow            = OAuth2WebServerFlow(client_id, client_secret, scope)
     flow.user_agent = guser_agent
 
-    cwd       = os.getcwd()
-    file      = os.path.join(cwd, guser_cred_file)
-    storage   = Storage(file)
+    storage   = Storage(user_cred_filename)
     user_cred = storage.get()
 
     # If no credentials are able to be loaded, fire up a web
@@ -122,7 +121,7 @@ def gd_load_user_credentials(scope, app_cred, log):
                                         tools.argparser.parse_args())
 
     log.debug('Loaded user credentials from {0}'
-                  .format(file))
+                  .format(user_cred_filename))
     return user_cred
 
 #-------------------------------------------------------------------
@@ -148,7 +147,8 @@ def gd_login(args, log):
             # Authorize the app and provide user consent to Google
             log.debug("Authenticating to Google...")
             app_cred  = gd_load_app_credentials(args.app_id, log)
-            user_cred = gd_load_user_credentials(gscope, app_cred, log)
+            user_cred = gd_load_user_credentials(gscope, app_cred,
+                                                 args.user_credentials, log)
             service   = gd_authorize(user_cred, log)
             log.info("Authenticated to Google")
             break
@@ -205,6 +205,10 @@ def gd_upload_file(service, dest_folder, upload_filename, log):
     basename = os.path.basename(upload_filename)
     mime     = mimetypes.guess_type('file://{f}'
                                     .format(f=upload_filename))
+    if mime == (None, None):
+        mime = 'application/x-sqlite3'
+        log.debug('Got no mime type: assume {m}'.format(m=mime))
+
     log.debug('Uploading file "{base}" (Google Drive folder ID: {folder}, MIME type {m})'
               .format(base=basename,
                       folder=dest_folder['id'],
@@ -257,6 +261,9 @@ def add_cli_args():
     tools.argparser.add_argument('--app-id',
                                  default='client_id.json',
                                  help='Filename containing Google application credentials')
+    tools.argparser.add_argument('--user-credentials',
+                                 default='user-credentials.json',
+                                 help='Filename containing Google user credentials')
 
     tools.argparser.add_argument('files',
                                  metavar='file',
