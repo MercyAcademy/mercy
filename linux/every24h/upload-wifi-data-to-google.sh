@@ -11,7 +11,7 @@ fi
 db_filename="`date +'%Y-%m-%d'`.sqlite3"
 cd "$data_dir"
 
-if test ! -d archives;
+if test ! -d archives; then
     mkdir -p archives
 fi
 
