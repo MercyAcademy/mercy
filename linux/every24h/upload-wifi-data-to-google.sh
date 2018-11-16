@@ -31,7 +31,7 @@ for file in `ls *.sqlite3 | grep -v $db_filename`; do
         --user-credentials $user_credentials \
         --dest $dest_folder \
         $file
-    $st=$?
+    st=$?
 
     # If we were successful uploading, then move this file to the
     # archives folder so that we don't upload it again tomorrow.
