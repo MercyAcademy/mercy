@@ -140,7 +140,7 @@ def graph_num_clients(databases, log):
     #     },
     # }
 
-    def _get_empty():
+    def _create_empty():
         return {
             'minute' : {
                 'raw' : dict(),
@@ -167,7 +167,7 @@ def graph_num_clients(databases, log):
 
     #-----------------------------
     # Now plot them all relative to the first date
-    total          = _get_empty()
+    total          = _create_empty()
     per_controller = dict()
     per_ap         = dict()
     exp            = re.compile("(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d):")
@@ -192,11 +192,17 @@ def graph_num_clients(databases, log):
                     day    = int(match.group(3))
                     hour   = int(match.group(4))
                     minute = _normalize_minute(int(match.group(5)))
+                    dt     = datetime(year, month, day, hour, minute)
 
-                    ap_id  = client['ap_index']
-                    c_id   = day_db['aps']['rows'][ap_id]['controller_id']
+                    wlan_id = client['wlan_index']
+                    ssid    = day_db['wlans']['rows'][wlan_id]['ssid']
+                    client['ssid'] = ssid
 
-                    dt = datetime(year, month, day, hour, minute)
+                    ap_id   = client['ap_index']
+                    ap_name = day_db['aps']['rows'][ap_id]['name']
+                    client['ap_name'] = ap_name
+
+                    c_id    = day_db['aps']['rows'][ap_id]['controller_id']
 
                     def _minute_increment(data, timestamp):
                         data_minute = data['minute']['raw']
@@ -211,13 +217,14 @@ def graph_num_clients(databases, log):
                     # Increment the "number of clients on this AP"
                     # count at this timestamp.
                     if not ap_id in per_ap:
-                        per_ap[ap_id] = _get_empty()
+                        per_ap[ap_id] = _create_empty()
+                        per_ap[ap_id]['ap_name'] = ap_name
                     _minute_increment(per_ap[ap_id], dt)
 
                     # Increment the "number of clients on this
                     # controller" count at this timestamp.
                     if not c_id in per_controller:
-                        per_controller[c_id] = _get_empty()
+                        per_controller[c_id] = _create_empty()
                     _minute_increment(per_controller[c_id], dt)
 
     #-----------------------------
@@ -255,6 +262,9 @@ def graph_num_clients(databases, log):
         _average_per_hour(per_controller[c_id])
 
     #-----------------------------
+    # Convert the data from the dict() that it is stored in to be a
+    # list() (because matplotlib needs data in lists in order to plot
+    # them).
     def _listize(data, sub_name=None):
         x = list()
         y = list()
@@ -326,9 +336,61 @@ def graph_num_clients(databases, log):
          rotation_mode="anchor")
 
     fig.savefig("total-clients-on-each-controller.pdf")
-    plt.show()
+    #plt.show()
 
     #-----------------------------
+    # Plot clients on each AP
+    fig, ax = plt.subplots()
+    ax.set(xlabel='Days', ylabel='Number of clients',
+           title='Average number of wifi clients per hour on each AP')
+
+    for ap_id, a in per_ap.items():
+        log.info("Ploting average number of clients per hour on AP {name}"
+                 .format(name=a['ap_name']))
+        ax.plot(a['hour']['x'], a['hour']['y'],
+                label=a['ap_name'])
+
+    plt.legend()
+    ax.get_xaxis().set_major_locator(mdates.DayLocator(interval=1))
+    ax.get_xaxis().set_major_formatter(mdates.DateFormatter("%a %b %d"))
+    ax.grid()
+    plt.setp(ax.get_xticklabels(), rotation=20, ha="right",
+         rotation_mode="anchor")
+
+    fig.savefig("total-clients-on-each-ap.pdf")
+    #plt.show()
+
+    #-----------------------------
+    # Plot clients on each AP only when num_clients>=40
+    fig, ax = plt.subplots()
+    ax.set(xlabel='Days', ylabel='Number of clients',
+           title='Average number of wifi clients per hour on each AP')
+
+    min_value = 50
+    for ap_id, a in per_ap.items():
+        happy = False
+        for y in a['hour']['y']:
+            if y >= min_value:
+                happy = True
+                break
+
+        if not happy:
+            continue
+
+        log.info("Ploting average number of clients per hour on AP {name} (when  num_clients > {min})"
+                 .format(name=a['ap_name'], min=min_value))
+        ax.plot(a['hour']['x'], a['hour']['y'],
+                label=a['ap_name'])
+
+    plt.legend()
+    ax.get_xaxis().set_major_locator(mdates.DayLocator(interval=1))
+    ax.get_xaxis().set_major_formatter(mdates.DateFormatter("%a %b %d"))
+    ax.grid()
+    plt.setp(ax.get_xticklabels(), rotation=20, ha="right",
+         rotation_mode="anchor")
+
+    fig.savefig("total-clients-on-each-ap-large.pdf")
+    plt.show()
 
 #####################################################################
 
@@ -369,6 +431,20 @@ def read_table(cur, name, log):
 
     return table
 
+def normalize_client_sightings(db, log):
+    for _, client in db['client_sightings']['rows'].items():
+        ap_id     = client['ap_index']
+        wlan_id   = client['wlan_index']
+
+        client['ap_name']   = db['aps']['rows'][ap_id]['name']
+        client['wlan_ssid'] = db['wlans']['rows'][wlan_id]['ssid']
+
+def normalize_ap_sightings(db):
+    for _, ap in db['ap_sightings']['rows'].items():
+        ap_id = ap['ap_index']
+
+        ap['ap_name'] = db['aps']['rows'][ap_id]['name']
+
 def read_database(filename, log):
     db               = dict()
     conn             = sqlite3.connect(filename)
@@ -376,13 +452,17 @@ def read_database(filename, log):
     cur              = conn.cursor()
 
     db['controllers']      = read_table(cur, 'controllers', log)
-    db['lans']             = read_table(cur, 'wlans', log)
+    db['wlans']            = read_table(cur, 'wlans', log)
     db['aps']              = read_table(cur, 'aps', log)
     db['clients']          = read_table(cur, 'clients', log)
     db['client_sightings'] = read_table(cur, 'client_sightings', log)
     db['ap_sightings']     = read_table(cur, 'ap_sightings', log)
 
     conn.close()
+
+    # Normalize IDs to names
+    normalize_client_sightings(db, log)
+    normalize_ap_sightings(db)
 
     return db
 
