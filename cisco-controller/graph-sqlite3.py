@@ -17,10 +17,10 @@ from pprint import pformat
 
 #####################################################################
 
-# SQL table schemas
-def db_get_schemas():
-    schemas = {
-        'controllers' : '''
+"""
+
+Database schemas
+
 CREATE TABLE controllers (
        id integer primary key autoincrement,
        timestamp datetime default current_timestamp,
@@ -28,9 +28,8 @@ CREATE TABLE controllers (
        name char(30),
        ip char(16)
 )
-''',
 
-        'wlans' : '''
+
 CREATE TABLE wlans (
        id integer primary key autoincrement,
        timestamp datetime default current_timestamp,
@@ -43,9 +42,7 @@ CREATE TABLE wlans (
        enabled integer,
        interface char(20)
 )
-''',
 
-        'aps' : '''
 CREATE TABLE aps (
        id integer primary key autoincrement,
        timestamp datetime default current_timestamp,
@@ -59,18 +56,14 @@ CREATE TABLE aps (
        location char(16),
        country char(8)
 )
-''',
 
-        'clients' : '''
 CREATE TABLE clients (
        id integer primary key autoincrement,
        timestamp datetime default current_timestamp,
 
        mac char(18)
 )
-''',
 
-        'ap_sightings' : '''
 CREATE TABLE ap_sightings (
        id integer primary key autoincrement,
        timestamp datetime default current_timestamp,
@@ -80,9 +73,7 @@ CREATE TABLE ap_sightings (
        ip char(16),
        num_clients integer
 )
-''',
 
-        'client_sightings' : '''
 CREATE TABLE client_sightings (
        id integer primary key autoincrement,
        timestamp datetime default current_timestamp,
@@ -94,16 +85,13 @@ CREATE TABLE client_sightings (
        protocol_802dot11 char(4),
        frequency_ghz float
 )
-'''
-    }
 
-    return schemas
+"""
 
 #####################################################################
 
-def graph_num_clients(databases, log):
-    # Find the first date in the databases
-    first          = None
+def analyze_find_first_date(databases):
+    first = None
     for year, year_db in databases.items():
         for month, month_db in year_db.items():
             for day, day_db in month_db.items():
@@ -114,71 +102,80 @@ def graph_num_clients(databases, log):
                 elif dt < first:
                     first = dt
 
-    log.debug("Found first: {dt}".format(dt=first))
+    return first
 
+# The data structures end up looking like this:
+#
+# foo = {
+#     'minute' : {
+#         'raw' : {
+#             minute_timestamp1 : count1,
+#             minute_timestamp2 : count2,
+#             minute_timestamp3 : count3,
+#             ...,
+#         },
+#         'x' : list(...),
+#         'y' : list(...),
+#     },
+#     'hour' : {
+#         'raw' : {
+#             hour_timestamp1 : { 'total' : total,
+#                                 'count' : count,
+#                                  'average' : average
+#                               },
+#             hour_timestamp2 : { 'total' : total,
+#                                 'count' : count,
+#                                  'average' : average
+#                               },
+#             hour_timestamp3 : { 'total' : total,
+#                                 'count' : count,
+#                                  'average' : average
+#                               },
+#             ...,
+#         },
+#         'x' : list(...),
+#         'y' : list(...),
+#     },
+# }
 
-    # foo = {
-    #     'minute' : {
-    #         'raw' : {
-    #             minute_timestamp1 : count1,
-    #             minute_timestamp2 : count2,
-    #             minute_timestamp3 : count3,
-    #             ...,
-    #         },
-    #         'x' : list(...),
-    #         'y' : list(...),
-    #     },
-    #     'hour' : {
-    #         'raw' : {
-    #             hour_timestamp1 : { 'total' : total, 'count' : count, 'average' : average },
-    #             hour_timestamp2 : { 'total' : total, 'count' : count, 'average' : average },
-    #             hour_timestamp3 : { 'total' : total, 'count' : count, 'average' : average },
-    #             ...,
-    #         },
-    #         'x' : list(...),
-    #         'y' : list(...),
-    #     },
-    # }
+def analyze_create_empty():
+    return {
+        'minute' : {
+            'raw' : dict(),
+        },
+        'hour' : {
+            'raw' : dict(),
+        },
+    }
 
-    def _create_empty():
-        return {
-            'minute' : {
-                'raw' : dict(),
-            },
-            'hour' : {
-                'raw' : dict(),
-            },
-        }
+# Normalize to 15-minute increments because
+# sometimes the controller gets busy and takes 1-3
+# minutes to report all the stats.
+def analyze_normalize_minute(minute):
+    if minute < 15:
+        minute = 0
+    elif minute < 30:
+        minute = 15
+    elif minute < 45:
+        minute = 30
+    else:
+        minute = 45
 
-    def _normalize_minute(minute):
-        # Normalize to 15-minute increments because
-        # sometimes the controller gets busy and takes 1-3
-        # minutes to report all the stats.
-        if minute < 15:
-            minute = 0
-        elif minute < 30:
-            minute = 15
-        elif minute < 45:
-            minute = 30
-        else:
-            minute = 45
+    return minute
 
-        return minute
-
-    #-----------------------------
-    # Now plot them all relative to the first date
-    total          = _create_empty()
+def analyze_client_sightings_minute(databases, first, log):
+    total          = analyze_create_empty()
     per_controller = dict()
     per_ap         = dict()
     exp            = re.compile("(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d):")
+
     for year, year_db in databases.items():
         for month, month_db in year_db.items():
             for day, day_db in month_db.items():
 
                 # Look at each client sighting at this timestamp.
                 #
-                # Save data both on a per-minute basis, per-hour
-                # basis, and a per-day basis.
+                # Save data both on per-minute and per-hour bases
                 for _, client in day_db['client_sightings']['rows'].items():
                     ts_str = client['timestamp']
                     match  = exp.match(ts_str)
@@ -191,7 +188,7 @@ def graph_num_clients(databases, log):
                     month  = int(match.group(2))
                     day    = int(match.group(3))
                     hour   = int(match.group(4))
-                    minute = _normalize_minute(int(match.group(5)))
+                    minute = analyze_normalize_minute(int(match.group(5)))
                     dt     = datetime(year, month, day, hour, minute)
 
                     wlan_id = client['wlan_index']
@@ -217,93 +214,105 @@ def graph_num_clients(databases, log):
                     # Increment the "number of clients on this AP"
                     # count at this timestamp.
                     if not ap_id in per_ap:
-                        per_ap[ap_id] = _create_empty()
+                        per_ap[ap_id] = analyze_create_empty()
+                        # Save the name of the AP, too.
                         per_ap[ap_id]['ap_name'] = ap_name
                     _minute_increment(per_ap[ap_id], dt)
 
                     # Increment the "number of clients on this
                     # controller" count at this timestamp.
                     if not c_id in per_controller:
-                        per_controller[c_id] = _create_empty()
+                        per_controller[c_id] = analyze_create_empty()
                     _minute_increment(per_controller[c_id], dt)
 
-    #-----------------------------
-    # Iterate over the collected data and compute per-hour averages.
-    def _average_per_hour(data):
-        data_min = data['minute']['raw']
-        for dt_min in data_min:
-            dt_hour = datetime(year=dt_min.year,
-                               month=dt_min.month,
-                               day=dt_min.day,
-                               hour=dt_min.hour)
+    return total, per_controller, per_ap
 
-            data_hour = data['hour']['raw']
-            if dt_hour not in data_hour:
-                data_hour[dt_hour] = {
-                    'total'   : 0,
-                    'count'   : 0,
-                }
+# Iterate over the collected data and compute per-hour averages.
+def analyze_client_sightings_hour(data, log):
+    data_min = data['minute']['raw']
+    for dt_min in data_min:
+        dt_hour = datetime(year=dt_min.year,
+                           month=dt_min.month,
+                           day=dt_min.day,
+                           hour=dt_min.hour)
 
-            log.debug("Found: min {dtm} --> hour {dth}"
-                      .format(dtm=dt_min, dth=dt_hour))
-            log.debug(pformat(data_min[dt_min]))
+        data_hour = data['hour']['raw']
+        if dt_hour not in data_hour:
+            data_hour[dt_hour] = {
+                'total'   : 0,
+                'count'   : 0,
+            }
 
-            data_hour[dt_hour]['total'] += data_min[dt_min]
-            data_hour[dt_hour]['count'] += 1
+        log.debug("Found: min {dtm} --> hour {dth}"
+                  .format(dtm=dt_min, dth=dt_hour))
+        log.debug(pformat(data_min[dt_min]))
 
-        for dt_hour, raw_hour in data_hour.items():
-            average = raw_hour['total'] / raw_hour['count']
-            raw_hour['average'] = average
+        data_hour[dt_hour]['total'] += data_min[dt_min]
+        data_hour[dt_hour]['count'] += 1
 
-    _average_per_hour(total)
+    for dt_hour, raw_hour in data_hour.items():
+        average = raw_hour['total'] / raw_hour['count']
+        raw_hour['average'] = average
+
+# Convert the data from the dict() that it is stored in to be a
+# list() (because matplotlib needs data in lists in order to plot
+# them).
+def analyze_listize(data, sub_name=None):
+    x = list()
+    y = list()
+
+    sorted_x = sorted(data['raw'])
+    for x_value in sorted_x:
+        x.append(x_value)
+        if sub_name:
+            y.append(data['raw'][x_value][sub_name])
+        else:
+            y.append(data['raw'][x_value])
+
+    data['x'] = x
+    data['y'] = y
+
+def analyze_databases(databases, log):
+    first = analyze_find_first_date(databases)
+    log.debug("Found first date in databases: {dt}".format(dt=first))
+
+    # Analyze all the loaded databases and make unified timelines
+    total, per_controller, per_ap = analyze_client_sightings_minute(databases,
+                                                                    first, log)
+
+    # Compute per-hour averages
+    analyze_client_sightings_hour(total, log)
     for ap_id in per_ap:
-        _average_per_hour(per_ap[ap_id])
+        analyze_client_sightings_hour(per_ap[ap_id], log)
     for c_id in per_controller:
-        _average_per_hour(per_controller[c_id])
-
-    #-----------------------------
-    # Convert the data from the dict() that it is stored in to be a
-    # list() (because matplotlib needs data in lists in order to plot
-    # them).
-    def _listize(data, sub_name=None):
-        x = list()
-        y = list()
-
-        sorted_x = sorted(data['raw'])
-        for x_value in sorted_x:
-            x.append(x_value)
-            if sub_name:
-                y.append(data['raw'][x_value][sub_name])
-            else:
-                y.append(data['raw'][x_value])
-
-        data['x'] = x
-        data['y'] = y
+        analyze_client_sightings_hour(per_controller[c_id], log)
 
     # Convert the data into ordered lists
-    _listize(total['minute'])
-    _listize(total['hour'], 'average')
+    analyze_listize(total['minute'])
+    analyze_listize(total['hour'], 'average')
     for ap_id in per_ap:
-        _listize(per_ap[ap_id]['minute'])
-        _listize(per_ap[ap_id]['hour'], 'average')
+        analyze_listize(per_ap[ap_id]['minute'])
+        analyze_listize(per_ap[ap_id]['hour'], 'average')
     for c_id in per_controller:
-        _listize(per_controller[c_id]['minute'])
-        _listize(per_controller[c_id]['hour'], 'average')
+        analyze_listize(per_controller[c_id]['minute'])
+        analyze_listize(per_controller[c_id]['hour'], 'average')
 
-    #-----------------------------
-    # Plot total clients
-    fig, ax = plt.subplots()
-    ax.set(xlabel='Days', ylabel='Number of clients',
-           title='Total number of wifi clients')
+    return total, per_controller, per_ap
 
+#####################################################################
+
+def plot_total_clients(total, meta, log):
     log.info("Plotting total number of clients on all controllers")
-    # JMS This makes a very busy plot
-    #ax.plot(total['minute']['x'], total['minute']['y'],
-    #        label='Total clients')
-    ax.step(total['hour']['x'], total['hour']['y'],
-            label='Averge clients per hour')
 
-    plt.legend()
+    fig, ax = plt.subplots()
+
+    str   = 'ax.{function}'.format(function=meta['function'])
+    func  = eval(str)
+    title = meta['title']
+    field = meta['field']
+
+    ax.set(xlabel='Days', ylabel='Number of clients', title=title)
+    func(total[field]['x'], total[field]['y'])
     ax.get_xaxis().set_major_locator(mdates.DayLocator(interval=1))
     ax.get_xaxis().set_major_formatter(mdates.DateFormatter("%a %b %d"))
     ax.grid()
@@ -313,20 +322,23 @@ def graph_num_clients(databases, log):
     fig.savefig("total-clients-on-all-controllers.pdf")
     #plt.show()
 
-    #-----------------------------
-    # Plot clients on each controller
+def plot_per_controller(per_controller, meta, log):
     fig, ax = plt.subplots()
-    ax.set(xlabel='Days', ylabel='Number of clients',
-           title='Average number of wifi clients per hour on each controller')
 
-    colors = ['r', 'b']
-    i = 0
+    str   = 'ax.{function}'.format(function=meta['function'])
+    func  = eval(str)
+    title = meta['title']
+    field = meta['field']
+
+    ax.set(xlabel='Days', ylabel='Number of clients',
+           title='{title} on each controller'.format(title=title))
+
     for c_id, c in per_controller.items():
         log.info("Ploting average number of clients per hour on controller {id}"
                  .format(id=c_id))
-        ax.plot(c['hour']['x'], c['hour']['y'], colors[i],
-                label='Average clients per hour on controller {id}'.format(id=c_id))
-        i += 1
+        func(c[field]['x'], c[field]['y'],
+             label=('Average clients per hour on controller {id}'
+                    .format(id=c_id)))
 
     plt.legend()
     ax.get_xaxis().set_major_locator(mdates.DayLocator(interval=1))
@@ -338,17 +350,21 @@ def graph_num_clients(databases, log):
     fig.savefig("total-clients-on-each-controller.pdf")
     #plt.show()
 
-    #-----------------------------
-    # Plot clients on each AP
+def plot_per_ap(per_ap, meta, log):
     fig, ax = plt.subplots()
+
+    str   = 'ax.{function}'.format(function=meta['function'])
+    func  = eval(str)
+    title = meta['title']
+    field = meta['field']
+
     ax.set(xlabel='Days', ylabel='Number of clients',
-           title='Average number of wifi clients per hour on each AP')
+           title='{title} on each AP'.format(title=title))
 
     for ap_id, a in per_ap.items():
         log.info("Ploting average number of clients per hour on AP {name}"
                  .format(name=a['ap_name']))
-        ax.plot(a['hour']['x'], a['hour']['y'],
-                label=a['ap_name'])
+        func(a[field]['x'], a[field]['y'], label=a['ap_name'])
 
     plt.legend()
     ax.get_xaxis().set_major_locator(mdates.DayLocator(interval=1))
@@ -552,7 +568,25 @@ def main():
 
     databases = read_databases(args, log)
 
-    graph_num_clients(databases, log)
+    total, per_controller, per_ap = analyze_databases(databases, log)
+
+    # Which plot?
+    # 1. Continuous
+    continuous = {
+        'field'    : 'minute',
+        'function' : 'plot',
+        'title'    : 'Number of clients',
+    }
+    # 2. Step
+    step = {
+        'field'    : 'hour',
+        'function' : 'step',
+        'title'    : 'Average number of clients per hour',
+    }
+
+    plot_total_clients(total, continuous, log)
+    plot_per_controller(per_controller, step, log)
+    plot_per_ap(per_ap, step, log)
 
 if __name__ == "__main__":
     main()
