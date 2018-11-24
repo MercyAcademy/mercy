@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 #
-# brew install libpng freetype pkg-config
-# brew install ffmpeg
+# brew install libpng freetype pkg-config ffmpeg
 #
 # Do not install matplotlib from pip3 -- it won't have the Right
 # Things for animation.  Instead, build it manually:
@@ -10,8 +9,6 @@
 # cd matplotlib
 # python3.7 -mpip install .
 #
-# pip3 install --user imageio   # <-- not 100% sure this is necessary...?
-# pip3 install --user Pillow    # <-- not 100% sure this is necessary...?
 # pip3 install --user pytz
 #
 
@@ -33,6 +30,31 @@ from datetime import datetime
 from datetime import date
 from pprint import pformat
 
+#####################################################################
+
+# Number of clients for the different colors in the scatter plots
+green_max  = 35
+yellow_max = 45
+red_max    = 999
+
+# Values used in computing circle size in the scatter plots
+min_val   = 0
+max_val   = 200
+range_val = max_val - min_val
+
+min_scale_val   = 0
+max_scale_val   = 500
+range_scale_val = max_scale_val - min_scale_val
+
+#-------------------------------------------------------------------
+
+# Timezone information
+local_tz_name = 'America/Louisville'
+local_tz = pytz.timezone(local_tz_name)
+
+utc_tz = pytz.utc
+
+# Weekday names
 weekday_names = [
     'Mon',
     'Tue',
@@ -42,19 +64,6 @@ weekday_names = [
     'Sat',
     'Sun',
 ]
-
-min_val   = 10
-max_val   = 200
-range_val = max_val - min_val
-
-min_scale_val   = 0
-max_scale_val   = 500
-range_scale_val = max_scale_val - min_scale_val
-
-local_tz_name = 'America/Louisville'
-local_tz = pytz.timezone(local_tz_name)
-
-utc_tz = pytz.utc
 
 #####################################################################
 
@@ -132,10 +141,6 @@ CREATE TABLE client_sightings (
 #####################################################################
 
 def get_color(value):
-    green_max  = 35
-    yellow_max = 45
-    red_max    = 999
-
     if value <= green_max:
         color = 'g'
     elif value <= yellow_max:
@@ -546,7 +551,13 @@ def load_ap_coordinates(log):
         'AP-Athletic-Bldg' : { 'y' : -6, 'x' : 3, 'shortname' : ' AthBlgd'},
     }
 
-    return aps
+    # These x/y values carefully chosen (in conjunction with the
+    # values above) so that we can plot a text value here that changes
+    # over the animation (i.e., it's just above the text frame of the
+    # plot area).
+    timestamp = { 'y' : 7.1, 'x' : 2.8 }
+
+    return aps, timestamp
 
 def plot_scatter_listize(data, coords, log):
     # Key: timestamp
@@ -615,16 +626,27 @@ def plot_scatter_calculate_axis(coords, log):
 
     return [min_x, max_x, min_y, max_y]
 
-def plot_scatter_set_title(dt):
-    title = ('{dayname} {year:04d}-{mon:02d}-{day:02d} {hour:02d}:{min:02d} {tz}'
-             .format(year=dt.year,
-                     mon=dt.month,
-                     day=dt.day,
-                     dayname=weekday_names[dt.weekday()],
-                     hour=dt.hour,
-                     min=dt.minute,
-                     tz=local_tz_name))
-    plt.title(title)
+def plot_scatter_make_title(dt, dayname=False, hour_min=False, tz=False):
+    title = ''
+
+    if dayname:
+        title += ('{dayname} '
+                  .format(dayname=weekday_names[dt.weekday()]))
+
+    title += ('{year:04d}-{mon:02d}-{day:02d} '
+              .format(year=dt.year,
+                      mon=dt.month,
+                      day=dt.day))
+
+    if hour_min:
+        title += ('{hour:02d}:{min:02d} '
+                  .format(hour=dt.hour,
+                          min=dt.minute))
+
+    if tz:
+        title += ' {tz}'.format(tz=local_tz_name)
+
+    return title
 
 def plot_scatter_set_labels(coords):
     for _, coord in coords.items():
@@ -634,147 +656,152 @@ def plot_scatter_set_labels(coords):
 
         plt.text(x, y, name)
 
-def plot_save_pdf(fig, ap_data_item, log):
-    dt = ap_data_item['timestamp']
-    filename = ('aps-{year:04d}{mon:02d}{day:02d}-{dayname}-{hour:02d}{min:02d}.pdf'
-                .format(year=dt.year,
-                        mon=dt.month,
-                        day=dt.day,
-                        dayname=weekday_names[dt.weekday()],
-                        hour=dt.hour,
-                        min=dt.minute))
+def plot_scatter_make_plot(item, log):
+    # Make the scatter plot for this timestamp
+    log.debug("x: {x}, y: {y}, s: {s}"
+              .format(x=pformat(item['x']),
+                      y=pformat(item['y']),
+                      s=pformat(item['s'])))
+    plot = plt.scatter(x=item['x'], y=item['y'],
+                       s=item['s'], c=item['c'])
 
-    fig.savefig(filename)
-    log.info("Wrote filename: {f}".format(f=filename))
+    return plot
 
-def plot_scatter_make_plots(fig, ap_listized_data, coords,
-                            save_pdfs, animate, log):
-    # Calculate the axis ranges once -- it doesn't change across all
-    # the plots.
+# The loops for generating scatter plot PDFs and animations are quite
+# similar, but slightly different than.  Though trial and error, I
+# have determined that I just need two different loops.
+#
+# 1. Generating PDFs requires a different title for each PDF.  Must
+# also call plt.cla() between each plot so that we don't get the union
+# of all previous scatter plots on that PDF output.
+#
+# 2. Generating animations will only use a single title (the animation
+# class does not seem to be smart enough to notice the difference in
+# titles, it only notices differences in the data area -- or I don't
+# know how to make it notice the difference).  And if you call
+# plt.cla() between each artist generation, you get a bogus movie.
+# Update: per
+# https://stackoverflow.com/questions/49158604/matplotlib-animation-update-title-using-artistanimation#49159236,
+# it seems you can only have one title per axis.
+#
+# So just keep this simple and have two different functions/loops for
+# generating the scatter plots for PDFs and animations separately.
+# Yes, this is wasteful because we generate the scatter plots twice,
+# but the logic is far simpler this way.  Cope.
+
+def plot_scatter_write_pdfs(fig, ap_listized_data, coords, log):
+    # Setup things that are the same between all PDFs
     axis = plot_scatter_calculate_axis(coords, log)
 
-    plt.cla()
-    plt.xticks([])
-    plt.yticks([])
-    plt.axis(axis)
-    plot_scatter_set_labels(coords)
-
-    # JMS remove me
-    i = 0
-    i_max = 100
-
-    dt_current = None
-    artists    = list()
+    # Loop over all the data, and generate a PDF for each scatter
+    # plot.
     for dt in sorted(ap_listized_data):
-        def _write_movie(fig, artists, dt):
-            ani = animation.ArtistAnimation(fig,
-                                            artists,
-                                            interval=100,
-                                            blit=True)
+        # Clear the plot so that we don't have output from the
+        # previous plot included in this new plot.
+        plt.cla()
 
-            filename = ('aps-{year:04d}{mon:02d}{day:02d}-{dayname}.mp4'
-                        .format(year=dt.year,
-                                mon=dt.month,
-                                day=dt.day,
-                                dayname=weekday_names[dt.weekday()]))
-            ani.save(filename)
-            log.info("Wrote movie: {f} ({num} frames)"
-                     .format(f=filename, num=len(artists)))
+        # Now put all the metadata back in the plot
+        plt.xticks([])
+        plt.yticks([])
+        plt.axis(axis)
+        plot_scatter_set_labels(coords)
+        title = plot_scatter_make_title(dt, dayname=True, hour_min=True,
+                                        tz=True)
+        plt.title(title)
 
-        plot_scatter_set_title(dt)
+        # Generate the actual scatter plot
+        _ = plot_scatter_make_plot(ap_listized_data[dt], log)
 
-        if animate:
-            if (dt_current and dt_current.day != dt.day and len(artists) > 0):
-                _write_movie(fig, artists, dt_current)
-                artists = list()
+        # Write it out to a file
+        filename = ('aps-{year:04d}{mon:02d}{day:02d}-{dayname}-{hour:02d}{min:02d}.pdf'
+                    .format(year=dt.year,
+                            mon=dt.month,
+                            day=dt.day,
+                            dayname=weekday_names[dt.weekday()],
+                            hour=dt.hour,
+                            min=dt.minute))
 
-        # Reset the axis (including all the plotted points) between
-        # each plot.
+        fig.savefig(filename)
+        log.info("Wrote filename: {f}".format(f=filename))
 
-        item = ap_listized_data[dt]
-        log.debug("x: {x}, y: {y}, s: {s}"
-                  .format(x=pformat(item['x']),
-                          y=pformat(item['y']),
-                          s=pformat(item['s'])))
-        plot = plt.scatter(x=item['x'], y=item['y'],
-                           s=item['s'], c=item['c'])
+def plot_scatter_write_animations(fig, ap_listized_data, ap_coords,
+                                  timestamp_coords, log):
 
-        item['plot'] = plot
+    def _reset_figure():
+        # Clear out everything from the previous animation
+        plt.cla()
+        plt.xticks([])
+        plt.yticks([])
+        plt.axis(axis)
+        plot_scatter_set_labels(ap_coords)
 
-        # Are we saving output plot files?
-
-        # We have to put this here in the make_plots() function
-        # because we save the *current state of the figure*, not the
-        # *plot*.
-        if save_pdfs:
-            plot_save_pdf(fig, item, log)
-
-        if animate:
-            artists.append([plot])
-            dt_current = dt
-
-        # JMS delete me
-        i = i + 1
-        if i > i_max:
-            log.info("JMS LEAVING LOOP EARLY")
-            break
-
-    # Write last movie
-    if animate and len(artists) > 0:
-        _write_movie(fig, artists, dt_current)
-
-def plot_scatter_animate(fig, ap_listized_data, log):
-    def _write_movie(day_plots, dt):
-        log.info("JMS DEBUG day plots")
-        log.info(pformat(day_plots))
+    def _write_movie(fig, artists, dt):
         ani = animation.ArtistAnimation(fig,
-                                        day_plots,
-                                        interval=100,
-                                        blit=False)
+                                        artists,
+                                        interval=1000,
+                                        blit=True)
 
         filename = ('aps-{year:04d}{mon:02d}{day:02d}-{dayname}.mp4'
                     .format(year=dt.year,
                             mon=dt.month,
                             day=dt.day,
-                            hour=dt.hour,
-                            min=dt.minute,
                             dayname=weekday_names[dt.weekday()]))
         ani.save(filename)
-                 #writer='pillow',
-                 #writer='ffmpeg',
-                 #metadata={'artist':'Jeff Squyres'})
         log.info("Wrote movie: {f} ({num} frames)"
-                 .format(f=filename, num=len(day_plots)))
+                 .format(f=filename, num=len(artists)))
 
-    day_plots  = list()
+        _reset_figure()
+
+    # Setup things that are the same between all artists (i.e.,
+    # frames)
+    axis = plot_scatter_calculate_axis(ap_coords, log)
+    _reset_figure()
+
+    # Do not make an actual plt.title (i.e., a title on the axis),
+    # because those cannot be animated.  Instead, we'll do some
+    # trickery below.
+
+    # Loop over all the data, and generate a frame ("artist") for each
+    # one.
     dt_current = None
-    for dt, item in ap_listized_data.items():
-        if len(day_plots) > 0 and dt.day != dt_current.day:
-            _write_movie(day_plots, dt_current)
-            day_plots = list()
+    artists    = list()
+    for dt in sorted(ap_listized_data):
+        # See if the day has changed.  If so, write out the animation
+        # of the previous day *BEFORE* we change the figure for today.
+        if (dt_current and dt_current.day != dt.day and len(artists) > 0):
+            _write_movie(fig, artists, dt_current)
+            artists = list()
+            plt.cla()
+            plt.xticks([])
+            plt.yticks([])
+            plt.axis(axis)
+            plot_scatter_set_labels(ap_coords)
 
-        # Note that animations require a list of lists.
-        day_plots.append([ item['plot'] ])
-        log.info('Saved day plot {dt}'.format(dt=dt))
+        title_str = plot_scatter_make_title(dt, dayname=True,
+                                            hour_min=True, tz=True)
+        title     = plt.text(x=timestamp_coords['x'],
+                             y=timestamp_coords['y'],
+                             s=title_str)
 
+        # Generate the actual scatter plot
+        plot = plot_scatter_make_plot(ap_listized_data[dt], log)
+        artists.append([plot, title])
         dt_current = dt
 
-    if len(day_plots) > 0:
-        _write_movie(day_plots, dt_current)
+    # Write out the last animation
+    if len(artists) > 0:
+        _write_movie(fig, artists, dt_current)
 
 def plot_scatter_ap_clients(ap_data, log):
     # Subplots gives us a larger plot area (vs. plt.figure()).
     fig, _ = plt.subplots()
     fig.tight_layout()
 
-    # JMS Debug
-    save_pdfs = False
-    animate   = True
-
-    ap_coords = load_ap_coordinates(log)
+    ap_coords, timestamp_coord = load_ap_coordinates(log)
     ap_listized_data = plot_scatter_listize(ap_data, ap_coords, log)
-    plot_scatter_make_plots(fig, ap_listized_data, ap_coords,
-                            save_pdfs, animate, log)
+    #plot_scatter_write_pdfs(fig, ap_listized_data, ap_coords, log)
+    plot_scatter_write_animations(fig, ap_listized_data, ap_coords,
+                                  timestamp_coord, log)
 
 #####################################################################
 
