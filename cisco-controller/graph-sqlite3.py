@@ -647,26 +647,49 @@ def plot_save_pdf(fig, ap_data_item, log):
     fig.savefig(filename)
     log.info("Wrote filename: {f}".format(f=filename))
 
-def plot_scatter_make_plots(fig, ap_listized_data, coords, save_pdfs, log):
+def plot_scatter_make_plots(fig, ap_listized_data, coords,
+                            save_pdfs, animate, log):
     # Calculate the axis ranges once -- it doesn't change across all
     # the plots.
     axis = plot_scatter_calculate_axis(coords, log)
+
+    plt.cla()
+    plt.xticks([])
+    plt.yticks([])
+    plt.axis(axis)
+    plot_scatter_set_labels(coords)
 
     # JMS remove me
     i = 0
     i_max = 100
 
-    log.info("JMS Making plots")
-    log.info(pformat(sorted(ap_listized_data)))
+    dt_current = None
+    artists    = list()
     for dt in sorted(ap_listized_data):
+        def _write_movie(fig, artists, dt):
+            ani = animation.ArtistAnimation(fig,
+                                            artists,
+                                            interval=100,
+                                            blit=True)
+
+            filename = ('aps-{year:04d}{mon:02d}{day:02d}-{dayname}.mp4'
+                        .format(year=dt.year,
+                                mon=dt.month,
+                                day=dt.day,
+                                dayname=weekday_names[dt.weekday()]))
+            ani.save(filename)
+            log.info("Wrote movie: {f} ({num} frames)"
+                     .format(f=filename, num=len(artists)))
+
+        plot_scatter_set_title(dt)
+
+        if animate:
+            if (dt_current and dt_current.day != dt.day and len(artists) > 0):
+                _write_movie(fig, artists, dt_current)
+                artists = list()
+
         # Reset the axis (including all the plotted points) between
         # each plot.
-        plt.cla()
-        plot_scatter_set_title(dt)
-        plt.xticks([])
-        plt.yticks([])
-        plt.axis(axis)
-        plot_scatter_set_labels(coords)
 
         item = ap_listized_data[dt]
         log.debug("x: {x}, y: {y}, s: {s}"
@@ -679,11 +702,16 @@ def plot_scatter_make_plots(fig, ap_listized_data, coords, save_pdfs, log):
         item['plot'] = plot
 
         # Are we saving output plot files?
+
         # We have to put this here in the make_plots() function
         # because we save the *current state of the figure*, not the
         # *plot*.
         if save_pdfs:
             plot_save_pdf(fig, item, log)
+
+        if animate:
+            artists.append([plot])
+            dt_current = dt
 
         # JMS delete me
         i = i + 1
@@ -691,13 +719,18 @@ def plot_scatter_make_plots(fig, ap_listized_data, coords, save_pdfs, log):
             log.info("JMS LEAVING LOOP EARLY")
             break
 
+    # Write last movie
+    if animate and len(artists) > 0:
+        _write_movie(fig, artists, dt_current)
+
 def plot_scatter_animate(fig, ap_listized_data, log):
     def _write_movie(day_plots, dt):
+        log.info("JMS DEBUG day plots")
         log.info(pformat(day_plots))
         ani = animation.ArtistAnimation(fig,
                                         day_plots,
-                                        interval=50,
-                                        blit=True)
+                                        interval=100,
+                                        blit=False)
 
         filename = ('aps-{year:04d}{mon:02d}{day:02d}-{dayname}.mp4'
                     .format(year=dt.year,
@@ -731,15 +764,17 @@ def plot_scatter_animate(fig, ap_listized_data, log):
 
 def plot_scatter_ap_clients(ap_data, log):
     # Subplots gives us a larger plot area (vs. plt.figure()).
-    #fig, ax = plt.subplots()
-    fig = plt.figure()
+    fig, _ = plt.subplots()
     fig.tight_layout()
+
+    # JMS Debug
+    save_pdfs = False
+    animate   = True
 
     ap_coords = load_ap_coordinates(log)
     ap_listized_data = plot_scatter_listize(ap_data, ap_coords, log)
     plot_scatter_make_plots(fig, ap_listized_data, ap_coords,
-                            True, log)
-    plot_scatter_animate(fig, ap_listized_data, log)
+                            save_pdfs, animate, log)
 
 #####################################################################
 
