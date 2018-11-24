@@ -1,19 +1,60 @@
 #!/usr/bin/env python3
+#
+# brew install libpng freetype pkg-config
+# brew install ffmpeg
+#
+# Do not install matplotlib from pip3 -- it won't have the Right
+# Things for animation.  Instead, build it manually:
+#
+# git clone git@github.com:matplotlib/matplotlib.git
+# cd matplotlib
+# python3.7 -mpip install .
+#
+# pip3 install --user imageio   # <-- not 100% sure this is necessary...?
+# pip3 install --user Pillow    # <-- not 100% sure this is necessary...?
+# pip3 install --user pytz
+#
 
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import matplotlib
 import argparse
 import logging
 import sqlite3
+import pytz
 import sys
 import os
 import re
+
+import matplotlib
+import matplotlib.animation as animation
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
 
 from matplotlib.ticker import NullFormatter
 from datetime import datetime
 from datetime import date
 from pprint import pformat
+
+weekday_names = [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun',
+]
+
+min_val   = 10
+max_val   = 200
+range_val = max_val - min_val
+
+min_scale_val   = 0
+max_scale_val   = 500
+range_scale_val = max_scale_val - min_scale_val
+
+local_tz_name = 'America/Louisville'
+local_tz = pytz.timezone(local_tz_name)
+
+utc_tz = pytz.utc
 
 #####################################################################
 
@@ -90,6 +131,20 @@ CREATE TABLE client_sightings (
 
 #####################################################################
 
+def get_color(value):
+    green_max  = 35
+    yellow_max = 45
+    red_max    = 999
+
+    if value <= green_max:
+        color = 'g'
+    elif value <= yellow_max:
+        color = 'y'
+    else:
+        color = 'r'
+
+    return color
+
 def analyze_find_first_date(databases):
     first = None
     for year, year_db in databases.items():
@@ -136,6 +191,8 @@ def analyze_find_first_date(databases):
 #         'x' : list(...),
 #         'y' : list(...),
 #     },
+#     # For APs:
+#     'ap_name' : name,
 # }
 
 def analyze_create_empty():
@@ -177,6 +234,8 @@ def analyze_client_sightings_minute(databases, first, log):
                 #
                 # Save data both on per-minute and per-hour bases
                 for _, client in day_db['client_sightings']['rows'].items():
+                    # NOTE: The timestamp is form SQLite, and is in
+                    # UTC!  Must be converted to local time.
                     ts_str = client['timestamp']
                     match  = exp.match(ts_str)
                     if not match:
@@ -189,7 +248,12 @@ def analyze_client_sightings_minute(databases, first, log):
                     day    = int(match.group(3))
                     hour   = int(match.group(4))
                     minute = analyze_normalize_minute(int(match.group(5)))
-                    dt     = datetime(year, month, day, hour, minute)
+
+                    utc_dt   = utc_tz.localize(datetime(year, month, day,
+                                                        hour, minute))
+                    client['utc_timestamp'] = utc_dt
+                    local_dt = utc_dt.astimezone(local_tz)
+                    client['local_timestamp'] = local_dt
 
                     wlan_id = client['wlan_index']
                     ssid    = day_db['wlans']['rows'][wlan_id]['ssid']
@@ -209,7 +273,7 @@ def analyze_client_sightings_minute(databases, first, log):
 
                     # Increment the "total number of clients" count at
                     # this timestamp.
-                    _minute_increment(total, dt)
+                    _minute_increment(total, local_dt)
 
                     # Increment the "number of clients on this AP"
                     # count at this timestamp.
@@ -217,13 +281,13 @@ def analyze_client_sightings_minute(databases, first, log):
                         per_ap[ap_id] = analyze_create_empty()
                         # Save the name of the AP, too.
                         per_ap[ap_id]['ap_name'] = ap_name
-                    _minute_increment(per_ap[ap_id], dt)
+                    _minute_increment(per_ap[ap_id], local_dt)
 
                     # Increment the "number of clients on this
                     # controller" count at this timestamp.
                     if not c_id in per_controller:
                         per_controller[c_id] = analyze_create_empty()
-                    _minute_increment(per_controller[c_id], dt)
+                    _minute_increment(per_controller[c_id], local_dt)
 
     return total, per_controller, per_ap
 
@@ -253,6 +317,8 @@ def analyze_client_sightings_hour(data, log):
     for dt_hour, raw_hour in data_hour.items():
         average = raw_hour['total'] / raw_hour['count']
         raw_hour['average'] = average
+        raw_hour['color'] = get_color(raw_hour['total'])
+        #raw_hour['color'] = get_color(average)
 
 # Convert the data from the dict() that it is stored in to be a
 # list() (because matplotlib needs data in lists in order to plot
@@ -317,10 +383,12 @@ def plot_total_clients(total, meta, log):
     ax.get_xaxis().set_major_formatter(mdates.DateFormatter("%a %b %d"))
     ax.grid()
     plt.setp(ax.get_xticklabels(), rotation=20, ha="right",
-         rotation_mode="anchor")
+             rotation_mode="anchor")
+    plt.title("Total number of wifi clients")
 
     fig.savefig("total-clients-on-all-controllers.pdf")
     #plt.show()
+    plt.close(fig)
 
 def plot_per_controller(per_controller, meta, log):
     fig, ax = plt.subplots()
@@ -349,6 +417,7 @@ def plot_per_controller(per_controller, meta, log):
 
     fig.savefig("total-clients-on-each-controller.pdf")
     #plt.show()
+    plt.close(fig)
 
 def plot_per_ap(per_ap, meta, log):
     fig, ax = plt.subplots()
@@ -375,6 +444,7 @@ def plot_per_ap(per_ap, meta, log):
 
     fig.savefig("total-clients-on-each-ap.pdf")
     #plt.show()
+    plt.close(fig)
 
     #-----------------------------
     # Plot clients on each AP only when num_clients>=40
@@ -407,6 +477,269 @@ def plot_per_ap(per_ap, meta, log):
 
     fig.savefig("total-clients-on-each-ap-large.pdf")
     plt.show()
+    plt.close(fig)
+
+def load_ap_coordinates(log):
+    aps = {
+        'AP-Chapel'       : { 'y': 6, 'x': 8,  'shortname' : ' Chapel' },
+        'AP-Business'     : { 'y': 6, 'x': 9,  'shortname' : 'Business' },
+        'AP123'           : { 'y': 6, 'x': 10, 'shortname' : '   123' },
+
+        'AP104'           : { 'y': 5, 'x': 1,  'shortname' : '   104' },
+        'AP103'           : { 'y': 5, 'x': 2,  'shortname' : '   103' },
+        'AP-MainOffice-r' : { 'y': 5, 'x': 5,  'shortname' : ' MainOff' },
+        'AP102'           : { 'y': 5, 'x': 6,  'shortname' : '   102' },
+        'AP101'           : { 'y': 5, 'x': 7,  'shortname' : '   101' },
+        'AP-Athletic'     : { 'y': 5, 'x': 10, 'shortname' : 'Athletic' },
+
+        'AP-MediaCenter2' : { 'y': 4, 'x': 1,  'shortname' : '   LC2' },
+        'AP-MediaCenter1' : { 'y': 4, 'x': 2,  'shortname' : '   LC1' },
+        'AP106'           : { 'y': 4, 'x': 3,  'shortname' : '   106' },
+        'AP107'           : { 'y': 4, 'x': 5,  'shortname' : '   107' },
+        'AP-Locker'       : { 'y': 4, 'x': 10, 'shortname' : ' Locker' },
+
+        'AP108'           : { 'y': 3, 'x': 1, 'shortname' : '   108' },
+        'AP109'           : { 'y': 3, 'x': 2, 'shortname' : '   109' },
+        'AP110'           : { 'y': 3, 'x': 3, 'shortname' : '   110' },
+        'AP111'           : { 'y': 3, 'x': 4, 'shortname' : '   111' },
+        'APSTEM'          : { 'y': 3, 'x': 5, 'shortname' : '   STEM' },
+        'AP113'           : { 'y': 3, 'x': 6, 'shortname' : '   113' },
+        'AP114'           : { 'y': 3, 'x': 7, 'shortname' : '   114' },
+
+        'AP-Cafe2'        : { 'y': 2, 'x': 8, 'shortname' : '  Cafe2' },
+
+        'AP-Cafe1'        : { 'y': 1, 'x': 8, 'shortname' : '  Cafe1' },
+        'AP-SmallGym'     : { 'y': 1, 'x': 9, 'shortname' : '  SmGym' },
+
+        #----------------
+
+        'AP206'           : { 'y' : -1, 'x' : 1, 'shortname' : '   206'},
+        'AP205'           : { 'y' : -1, 'x' : 2, 'shortname' : '   205'},
+        'AP204'           : { 'y' : -1, 'x' : 3, 'shortname' : '   204'},
+        'AP203'           : { 'y' : -1, 'x' : 4, 'shortname' : '   203'},
+        'AP202'           : { 'y' : -1, 'x' : 5, 'shortname' : '   202'},
+        'AP201'           : { 'y' : -1, 'x' : 6, 'shortname' : '   201'},
+        # Is this the conference room?s it not on the mapps that I have.
+        'AP-President'    : { 'y' : -1, 'x' : 7, 'shortname' : 'Presdnt'},
+        'AP-Gym'          : { 'y' : -1, 'x' : 8, 'shortname' : '   Gym'},
+
+        'AP207'           : { 'y' : -2, 'x' : 2, 'shortname' : '   207'},
+        'AP208'           : { 'y' : -2, 'x' : 4, 'shortname' : '   208'},
+        'AP-Auditorium-r' : { 'y' : -2, 'x' : 6, 'shortname' : 'Adtorum'},
+
+        'AP210'           : { 'y' : -3, 'x' : 2, 'shortname' : '   210'},
+        'AP209'           : { 'y' : -3, 'x' : 4, 'shortname' : '   209'},
+
+        'AP211'           : { 'y' : -4, 'x' : 1, 'shortname' : '   211'},
+        'AP212'           : { 'y' : -4, 'x' : 2, 'shortname' : '   212'},
+        'AP213'           : { 'y' : -4, 'x' : 3, 'shortname' : '   213'},
+        'AP214'           : { 'y' : -4, 'x' : 4, 'shortname' : '   214'},
+        'AP215r'          : { 'y' : -4, 'x' : 5, 'shortname' : '   215'},
+        'AP216'           : { 'y' : -4, 'x' : 6, 'shortname' : '   216'},
+        'AP217'           : { 'y' : -4, 'x' : 7, 'shortname' : '   217'},
+        'AP-Dance'        : { 'y' : -4, 'x' : 8, 'shortname' : '  Dance'},
+
+        #----------------
+
+        'AP-Turf-Field'    : { 'y' : -6, 'x' : 1, 'shortname' : '  Turf  '},
+        'AP-Softball'      : { 'y' : -6, 'x' : 2, 'shortname' : 'Softball'},
+        'AP-Athletic-Bldg' : { 'y' : -6, 'x' : 3, 'shortname' : ' AthBlgd'},
+    }
+
+    return aps
+
+def plot_scatter_listize(data, coords, log):
+    # Key: timestamp
+    output    = dict()
+
+    for _, ap in data.items():
+        name = ap['ap_name']
+        x = coords[name]['x']
+        y = coords[name]['y']
+
+        raw = ap['minute']['raw']
+        for dt in raw:
+            # Scale the value to be a respectible circle size
+            pct = raw[dt] / range_val
+            scaled_value = min_scale_val + pct * range_scale_val
+
+            # Get an appropriate color
+            c = get_color(raw[dt])
+
+            if not dt in output:
+                output[dt] = {
+                    'timestamp' : dt,
+                    'x'         : list(),
+                    'y'         : list(),
+                    's'         : list(),
+                    'c'         : list(),
+                    'plot'      : None, # To be filled in later
+                }
+
+            output[dt]['x'].append(x)
+            output[dt]['y'].append(y)
+            output[dt]['s'].append(scaled_value)
+            output[dt]['c'].append(c)
+
+    return output
+
+# Calculate the max axis size, because it doesn't change across all the
+# plots
+def plot_scatter_calculate_axis(coords, log):
+    min_x = 999
+    max_x = 0
+    min_y = 999
+    max_y = 0
+
+    for _, coord in coords.items():
+        x = coord['x']
+        y = coord['y']
+
+        if x > max_x:
+            max_x = x
+        if x < min_x:
+            min_x = x
+        if y > max_y:
+            max_y = y
+        if y < min_y:
+            min_y = y
+
+    # Add a little fluff to make sure it's big enough
+    min_x -= 1
+    max_x += 1
+    min_y -= 1
+    max_y += 1
+
+    log.debug("Calculated axes for scatter plot: x=[{minx},{maxx}], y=[{miny},{maxy}]"
+              .format(minx=min_x, maxx=max_x, miny=min_y, maxy=max_y))
+
+    return [min_x, max_x, min_y, max_y]
+
+def plot_scatter_set_title(dt):
+    title = ('{dayname} {year:04d}-{mon:02d}-{day:02d} {hour:02d}:{min:02d} {tz}'
+             .format(year=dt.year,
+                     mon=dt.month,
+                     day=dt.day,
+                     dayname=weekday_names[dt.weekday()],
+                     hour=dt.hour,
+                     min=dt.minute,
+                     tz=local_tz_name))
+    plt.title(title)
+
+def plot_scatter_set_labels(coords):
+    for _, coord in coords.items():
+        name = coord['shortname']
+        x = coord['x'] - 0.5
+        y = coord['y'] + 0.5
+
+        plt.text(x, y, name)
+
+def plot_save_pdf(fig, ap_data_item, log):
+    dt = ap_data_item['timestamp']
+    filename = ('aps-{year:04d}{mon:02d}{day:02d}-{dayname}-{hour:02d}{min:02d}.pdf'
+                .format(year=dt.year,
+                        mon=dt.month,
+                        day=dt.day,
+                        dayname=weekday_names[dt.weekday()],
+                        hour=dt.hour,
+                        min=dt.minute))
+
+    fig.savefig(filename)
+    log.info("Wrote filename: {f}".format(f=filename))
+
+def plot_scatter_make_plots(fig, ap_listized_data, coords, save_pdfs, log):
+    # Calculate the axis ranges once -- it doesn't change across all
+    # the plots.
+    axis = plot_scatter_calculate_axis(coords, log)
+
+    # JMS remove me
+    i = 0
+    i_max = 100
+
+    log.info("JMS Making plots")
+    log.info(pformat(sorted(ap_listized_data)))
+    for dt in sorted(ap_listized_data):
+        # Reset the axis (including all the plotted points) between
+        # each plot.
+        plt.cla()
+        plot_scatter_set_title(dt)
+        plt.xticks([])
+        plt.yticks([])
+        plt.axis(axis)
+        plot_scatter_set_labels(coords)
+
+        item = ap_listized_data[dt]
+        log.debug("x: {x}, y: {y}, s: {s}"
+                  .format(x=pformat(item['x']),
+                          y=pformat(item['y']),
+                          s=pformat(item['s'])))
+        plot = plt.scatter(x=item['x'], y=item['y'],
+                           s=item['s'], c=item['c'])
+
+        item['plot'] = plot
+
+        # Are we saving output plot files?
+        # We have to put this here in the make_plots() function
+        # because we save the *current state of the figure*, not the
+        # *plot*.
+        if save_pdfs:
+            plot_save_pdf(fig, item, log)
+
+        # JMS delete me
+        i = i + 1
+        if i > i_max:
+            log.info("JMS LEAVING LOOP EARLY")
+            break
+
+def plot_scatter_animate(fig, ap_listized_data, log):
+    def _write_movie(day_plots, dt):
+        log.info(pformat(day_plots))
+        ani = animation.ArtistAnimation(fig,
+                                        day_plots,
+                                        interval=50,
+                                        blit=True)
+
+        filename = ('aps-{year:04d}{mon:02d}{day:02d}-{dayname}.mp4'
+                    .format(year=dt.year,
+                            mon=dt.month,
+                            day=dt.day,
+                            hour=dt.hour,
+                            min=dt.minute,
+                            dayname=weekday_names[dt.weekday()]))
+        ani.save(filename)
+                 #writer='pillow',
+                 #writer='ffmpeg',
+                 #metadata={'artist':'Jeff Squyres'})
+        log.info("Wrote movie: {f} ({num} frames)"
+                 .format(f=filename, num=len(day_plots)))
+
+    day_plots  = list()
+    dt_current = None
+    for dt, item in ap_listized_data.items():
+        if len(day_plots) > 0 and dt.day != dt_current.day:
+            _write_movie(day_plots, dt_current)
+            day_plots = list()
+
+        # Note that animations require a list of lists.
+        day_plots.append([ item['plot'] ])
+        log.info('Saved day plot {dt}'.format(dt=dt))
+
+        dt_current = dt
+
+    if len(day_plots) > 0:
+        _write_movie(day_plots, dt_current)
+
+def plot_scatter_ap_clients(ap_data, log):
+    # Subplots gives us a larger plot area (vs. plt.figure()).
+    #fig, ax = plt.subplots()
+    fig = plt.figure()
+    fig.tight_layout()
+
+    ap_coords = load_ap_coordinates(log)
+    ap_listized_data = plot_scatter_listize(ap_data, ap_coords, log)
+    plot_scatter_make_plots(fig, ap_listized_data, ap_coords,
+                            True, log)
+    plot_scatter_animate(fig, ap_listized_data, log)
 
 #####################################################################
 
@@ -497,21 +830,22 @@ def read_databases(args, log):
                       .format(f=f.name))
             continue
 
-        year  = match.group(1)
-        month = match.group(2)
-        day   = match.group(3)
+        # NOTE: The filename timestamp is in local time (not UTC)
+        local_year  = match.group(1)
+        local_month = match.group(2)
+        local_day   = match.group(3)
 
         log.info("Reading database {f}..."
                  .format(f=f.path))
 
         db = read_database(filename=f.path, log=log)
 
-        if not year in databases:
-            databases[year] = dict()
-        if not month in databases[year]:
-            databases[year][month] = dict()
+        if not local_year in databases:
+            databases[local_year] = dict()
+        if not local_month in databases[local_year]:
+            databases[local_year][local_month] = dict()
 
-        databases[year][month][day] = db
+        databases[local_year][local_month][local_day] = db
 
     return databases
 
@@ -584,9 +918,10 @@ def main():
         'title'    : 'Average number of clients per hour',
     }
 
-    plot_total_clients(total, continuous, log)
-    plot_per_controller(per_controller, step, log)
-    plot_per_ap(per_ap, step, log)
+    #plot_total_clients(total, continuous, log)
+    #plot_per_controller(per_controller, step, log)
+    #plot_per_ap(per_ap, step, log)
+    plot_scatter_ap_clients(per_ap, log)
 
 if __name__ == "__main__":
     main()
