@@ -140,6 +140,8 @@ CREATE TABLE client_sightings (
 
 #####################################################################
 
+#####################################################################
+
 def get_color(value):
     if value <= green_max:
         color = 'g'
@@ -229,7 +231,6 @@ def analyze_client_sightings_minute(databases, first, log):
     total          = analyze_create_empty()
     per_controller = dict()
     per_ap         = dict()
-    exp            = re.compile("(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d):")
 
     for year, year_db in databases.items():
         for month, month_db in year_db.items():
@@ -239,36 +240,10 @@ def analyze_client_sightings_minute(databases, first, log):
                 #
                 # Save data both on per-minute and per-hour bases
                 for _, client in day_db['client_sightings']['rows'].items():
-                    # NOTE: The timestamp is form SQLite, and is in
-                    # UTC!  Must be converted to local time.
-                    ts_str = client['timestamp']
-                    match  = exp.match(ts_str)
-                    if not match:
-                        log.error("Malformed timestamp ('{ts}') -- skipped"
-                                  .format(ts=ts_str))
-                        continue
-
-                    year   = int(match.group(1))
-                    month  = int(match.group(2))
-                    day    = int(match.group(3))
-                    hour   = int(match.group(4))
-                    minute = analyze_normalize_minute(int(match.group(5)))
-
-                    utc_dt   = utc_tz.localize(datetime(year, month, day,
-                                                        hour, minute))
-                    client['utc_timestamp'] = utc_dt
-                    local_dt = utc_dt.astimezone(local_tz)
-                    client['local_timestamp'] = local_dt
-
-                    wlan_id = client['wlan_index']
-                    ssid    = day_db['wlans']['rows'][wlan_id]['ssid']
-                    client['ssid'] = ssid
-
-                    ap_id   = client['ap_index']
-                    ap_name = day_db['aps']['rows'][ap_id]['name']
-                    client['ap_name'] = ap_name
-
-                    c_id    = day_db['aps']['rows'][ap_id]['controller_id']
+                    local_dt = client['local_timestamp']
+                    ap_id    = client['ap_index']
+                    ap_name  = client['ap_name']
+                    c_id     = day_db['aps']['rows'][ap_id]['controller_id']
 
                     def _minute_increment(data, timestamp):
                         data_minute = data['minute']['raw']
@@ -323,7 +298,6 @@ def analyze_client_sightings_hour(data, log):
         average = raw_hour['total'] / raw_hour['count']
         raw_hour['average'] = average
         raw_hour['color'] = get_color(raw_hour['total'])
-        #raw_hour['color'] = get_color(average)
 
 # Convert the data from the dict() that it is stored in to be a
 # list() (because matplotlib needs data in lists in order to plot
@@ -343,10 +317,7 @@ def analyze_listize(data, sub_name=None):
     data['x'] = x
     data['y'] = y
 
-def analyze_databases(databases, log):
-    first = analyze_find_first_date(databases)
-    log.debug("Found first date in databases: {dt}".format(dt=first))
-
+def analyze_databases(databases, first, log):
     # Analyze all the loaded databases and make unified timelines
     total, per_controller, per_ap = analyze_client_sightings_minute(databases,
                                                                     first, log)
@@ -680,7 +651,7 @@ def plot_scatter_make_plot(item, log):
 # titles, it only notices differences in the data area -- or I don't
 # know how to make it notice the difference).  And if you call
 # plt.cla() between each artist generation, you get a bogus movie.
-# Update: per
+# Confirmation: per
 # https://stackoverflow.com/questions/49158604/matplotlib-animation-update-title-using-artistanimation#49159236,
 # it seems you can only have one title per axis.
 #
@@ -799,9 +770,33 @@ def plot_scatter_ap_clients(ap_data, log):
 
     ap_coords, timestamp_coord = load_ap_coordinates(log)
     ap_listized_data = plot_scatter_listize(ap_data, ap_coords, log)
-    #plot_scatter_write_pdfs(fig, ap_listized_data, ap_coords, log)
     plot_scatter_write_animations(fig, ap_listized_data, ap_coords,
                                   timestamp_coord, log)
+
+#####################################################################
+
+def analyze_follow_mac(name, mac, databases, first, log):
+    for year, year_db in databases.items():
+        for month, month_db in year_db.items():
+            for day, day_db in month_db.items():
+
+                # Look at each client sighting at this timestamp.
+                # Find the MAC of interest
+                for _, client in day_db['client_sightings']['rows'].items():
+                    if client['mac'] != mac:
+                        continue
+
+                    log.info("Found {name}/{mac} at {ts} on AP {ap}"
+                             .format(name=name, mac=mac,
+                                     ts=client['local_timestamp'],
+                                     ap=client['ap_name']))
+
+                    # JMS Do something with this data...
+
+def plot_follow_mac(name, mac, databases, first, log):
+    analyze_follow_mac(name, mac, databases, first, log)
+
+    # JMS plot this data...
 
 #####################################################################
 
@@ -829,6 +824,8 @@ def read_table(cur, name, log):
     result = cur.execute(sql)
     rows   = dict()
     for row in result.fetchall():
+        # sqlite3.Row does not have a .copy() method.
+        # So copy the data manually.
         data = dict()
         for fname in field_names:
             data[fname] = row[fname]
@@ -842,11 +839,48 @@ def read_table(cur, name, log):
 
     return table
 
+sqlite_dt_exp = re.compile("(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d):")
+
+def discretize_sqlite3_timestamp(timestamp_str, log):
+    match  = sqlite_dt_exp.match(timestamp_str)
+    if not match:
+        log.error("Malformed timestamp ('{ts}') -- skipped"
+                  .format(ts=timestamp_str))
+        return None, None
+
+    year   = int(match.group(1))
+    month  = int(match.group(2))
+    day    = int(match.group(3))
+    hour   = int(match.group(4))
+    minute = analyze_normalize_minute(int(match.group(5)))
+
+    utc_dt   = utc_tz.localize(datetime(year, month, day,
+                                        hour, minute))
+    local_dt = utc_dt.astimezone(local_tz)
+
+    return utc_dt, local_dt
+
+
+def normalize_timestamps(db, log):
+    # JMS For the moment, we only need to discretize the
+    # client_sightings and ap_sightings tables
+    #for table in ['controllers', 'wlans', 'aps', 'clients',
+    #              'client_sightings', 'ap_sightings']:
+    for table in ['client_sightings', 'ap_sightings']:
+        for _, row in db[table]['rows'].items():
+            ts = row['timestamp']
+
+            utc_dt, local_dt = discretize_sqlite3_timestamp(ts, log)
+            row['utc_timestamp']   = utc_dt
+            row['local_timestamp'] = local_dt
+
 def normalize_client_sightings(db, log):
     for _, client in db['client_sightings']['rows'].items():
+        client_id = client['client_index']
         ap_id     = client['ap_index']
         wlan_id   = client['wlan_index']
 
+        client['mac']       = db['clients']['rows'][client_id]['mac']
         client['ap_name']   = db['aps']['rows'][ap_id]['name']
         client['wlan_ssid'] = db['wlans']['rows'][wlan_id]['ssid']
 
@@ -870,6 +904,9 @@ def read_database(filename, log):
     db['ap_sightings']     = read_table(cur, 'ap_sightings', log)
 
     conn.close()
+
+    # Normalize timestamps
+    normalize_timestamps(db, log)
 
     # Normalize IDs to names
     normalize_client_sightings(db, log)
@@ -964,7 +1001,10 @@ def main():
 
     databases = read_databases(args, log)
 
-    total, per_controller, per_ap = analyze_databases(databases, log)
+    first = analyze_find_first_date(databases)
+    log.debug("Found first date in databases: {dt}".format(dt=first))
+
+    total, per_controller, per_ap = analyze_databases(databases, first, log)
 
     # Which plot?
     # 1. Continuous
@@ -983,7 +1023,13 @@ def main():
     #plot_total_clients(total, continuous, log)
     #plot_per_controller(per_controller, step, log)
     #plot_per_ap(per_ap, step, log)
-    plot_scatter_ap_clients(per_ap, log)
+    #plot_scatter_ap_clients(per_ap, log)
+
+    macs = {
+        'kathryn' : 'c0:b6:58:b4:f4:79',
+    }
+    for name, mac in macs.items():
+        plot_follow_mac(name, mac, databases, first, log)
 
 if __name__ == "__main__":
     main()
