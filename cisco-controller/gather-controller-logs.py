@@ -780,9 +780,10 @@ def db_read_tables(cur, schemas, log):
 #===============================================================
 
 def db_insert(cur, table_name, field_names, values, log):
-    sql   = 'INSERT INTO {name} ('.format(name=table_name)
-    sql2  = ') VALUES ('
-    first = True
+    sql              = 'INSERT INTO {name} ('.format(name=table_name)
+    sql2             = ') VALUES ('
+    first            = True
+    processed_values = list()
     for fname in field_names:
         # Special case: if the field name is 'controller_id', get the
         # right value for it.  There's a chicken and egg issue that we
@@ -803,20 +804,20 @@ def db_insert(cur, table_name, field_names, values, log):
         sql  += fname
         if not the_value:
             the_value = values[fname]
-        sql2 += '"{value}"'.format(value=the_value)
+        sql2 += '?'
+        processed_values.append(the_value)
 
         first = False
 
     sql += sql2 + ')'
 
-    log.debug("Executing SQL insert: {sql}".format(sql=sql))
-    cur.execute(sql)
+    log.debug("Executing SQL insert: {sql} / {values}"
+              .format(sql=sql, values=processed_values))
+    cur.execute(sql, processed_values)
     db_id = cur.lastrowid
-    cur.connection.commit()
 
-    # JMS values=values outputs the entire controllers dict
-    log.info("Added to {name} index table: {values}"
-             .format(name=table_name, values=sql))
+    log.info("Added to {name} index table: {sql} / {values}"
+             .format(name=table_name, sql=sql, values=processed_values))
 
     return db_id
 
@@ -878,6 +879,8 @@ def compare_index_table(cur, db, table_name, gathered_data, log):
 
         gathered_row['db_id'] = db_id
 
+    if updated:
+        cur.connection.commit()
     return updated
 
 #---------------------------------------------------------------
@@ -958,13 +961,13 @@ def correlate(db, controllers, log):
 def write_db_ap_sightings(cur, db, gathered_aps, cname, log):
     for _, gathered_ap in gathered_aps.items():
         sql = ('INSERT INTO ap_sightings (ap_index,ip,num_clients) ' +
-               'VALUES ({ap_index},"{ip}",{num_clients})'
-               .format(ap_index=gathered_ap['db_id'],
-                       ip=gathered_ap['ip'],
-                       num_clients=gathered_ap['clients']))
-        log.debug("About to insert AP sighting: {sql}".format(sql=sql))
-        cur.execute(sql)
-        cur.connection.commit()
+               'VALUES (?,?,?)')
+        values = [ gathered_ap['db_id'],
+                   gathered_ap['ip'],
+                   gathered_ap['clients'] ]
+        log.debug("About to insert AP sighting: {sql} / {values}"
+                  .format(sql=sql, values=values))
+        cur.execute(sql, values)
 
     log.info("Wrote {num} new AP sightings on {cname}"
              .format(num=len(gathered_aps), cname=cname))
@@ -975,15 +978,15 @@ def write_db_ap_sightings(cur, db, gathered_aps, cname, log):
 def write_db_client_sightings(cur, db, gathered_clients, cname, log):
     for _, gathered_client in gathered_clients.items():
         sql = ('INSERT INTO client_sightings (client_index,ap_index,wlan_index,protocol_802dot11,frequency_ghz) ' +
-               'VALUES ({client_index},{ap_index},{wlan_index},"{protocol}",{frequency})'
-               .format(client_index=gathered_client['db_id'],
-                       ap_index=gathered_client['ap']['db_id'],
-                       wlan_index=gathered_client['wlan']['db_id'],
-                       protocol=gathered_client['protocol'],
-                       frequency=gathered_client['frequency']))
-        log.debug("About to insert client sighting: {sql}".format(sql=sql))
-        cur.execute(sql)
-        cur.connection.commit()
+               'VALUES (?,?,?,?,?)')
+        values = [ gathered_client['db_id'],
+                   gathered_client['ap']['db_id'],
+                   gathered_client['wlan']['db_id'],
+                   gathered_client['protocol'],
+                   gathered_client['frequency'] ]
+        log.debug("About to insert client sighting: {sql} / {values}"
+                  .format(sql=sql, values=values))
+        cur.execute(sql, values)
 
     log.info("Wrote {num} new client sightings on {cname}"
              .format(num=len(gathered_clients), cname=cname))
@@ -1012,23 +1015,6 @@ def main():
                                      controllers=controllers,
                                      log=log)
 
-    # JMS I don't think this is necessary any more, because
-    # db_update_index_tables() writes db_id values to all the hashes.
-    if False:
-        # Once the index tables are updated -- although this is a bit
-        # wasteful / inefficient -- read in the database again.  It's the
-        # simplest way of getting all the data that we may have just
-        # inserted into the index tables / refreshing our data structures.
-        if updated:
-            log.debug("Database has changed -- re-reading tables")
-            db = db_read_tables(cur=cur, schemas=schemas, log=log)
-
-        # Correlate gathered APs, WLANs (on the controllers), and clients
-        # to their database indexes
-        log.debug("JMS BEFORE: {x}".format(x=pformat(controllers)))
-        correlate(db=db, controllers=controllers, log=log)
-        log.debug("JMS AFTER: {x}".format(x=pformat(controllers)))
-
     # Write all new sightings of APs and clients
     for _, controller in controllers.items():
         write_db_ap_sightings(cur=cur, db=db,
@@ -1039,6 +1025,10 @@ def main():
                                   gathered_clients=controller['clients'],
                                   cname=controller['name'],
                                   log=log)
+
+    # Commit everything that we just insertted (significantly faster
+    # than committing each insert).
+    cur.connection.commit()
 
     # Close out the database
     db_disconnect(cur)
