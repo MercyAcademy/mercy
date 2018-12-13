@@ -1015,23 +1015,6 @@ def main():
                                      controllers=controllers,
                                      log=log)
 
-    # JMS I don't think this is necessary any more, because
-    # db_update_index_tables() writes db_id values to all the hashes.
-    if False:
-        # Once the index tables are updated -- although this is a bit
-        # wasteful / inefficient -- read in the database again.  It's the
-        # simplest way of getting all the data that we may have just
-        # inserted into the index tables / refreshing our data structures.
-        if updated:
-            log.debug("Database has changed -- re-reading tables")
-            db = db_read_tables(cur=cur, schemas=schemas, log=log)
-
-        # Correlate gathered APs, WLANs (on the controllers), and clients
-        # to their database indexes
-        log.debug("JMS BEFORE: {x}".format(x=pformat(controllers)))
-        correlate(db=db, controllers=controllers, log=log)
-        log.debug("JMS AFTER: {x}".format(x=pformat(controllers)))
-
     # Write all new sightings of APs and clients
     for _, controller in controllers.items():
         write_db_ap_sightings(cur=cur, db=db,
