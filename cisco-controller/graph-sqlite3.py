@@ -26,8 +26,10 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 
 from matplotlib.ticker import NullFormatter
+from datetime import timedelta
 from datetime import datetime
 from datetime import date
+from pprint import pprint
 from pprint import pformat
 
 #####################################################################
@@ -366,6 +368,8 @@ def plot_total_clients(total, meta, log):
     #plt.show()
     plt.close(fig)
 
+#--------------------------------------------------------------------
+
 def plot_per_controller(per_controller, meta, log):
     fig, ax = plt.subplots()
 
@@ -395,7 +399,9 @@ def plot_per_controller(per_controller, meta, log):
     #plt.show()
     plt.close(fig)
 
-def plot_per_ap(per_ap, meta, log):
+#--------------------------------------------------------------------
+
+def plot_per_ap(per_ap, meta, min_num_clients, log):
     fig, ax = plt.subplots()
 
     str   = 'ax.{function}'.format(function=meta['function'])
@@ -403,44 +409,26 @@ def plot_per_ap(per_ap, meta, log):
     title = meta['title']
     field = meta['field']
 
+    #fig, ax = plt.subplots()
+    title='Average number of wifi clients per hour on each AP'
+    if min_num_clients > 0:
+        title += ('(when num clients >= {num}'
+                  .format(num=min_num_clients))
     ax.set(xlabel='Days', ylabel='Number of clients',
-           title='{title} on each AP'.format(title=title))
+           title=title)
 
-    for ap_id, a in per_ap.items():
-        log.info("Ploting average number of clients per hour on AP {name}"
-                 .format(name=a['ap_name']))
-        func(a[field]['x'], a[field]['y'], label=a['ap_name'])
-
-    plt.legend()
-    ax.get_xaxis().set_major_locator(mdates.DayLocator(interval=1))
-    ax.get_xaxis().set_major_formatter(mdates.DateFormatter("%a %b %d"))
-    ax.grid()
-    plt.setp(ax.get_xticklabels(), rotation=20, ha="right",
-         rotation_mode="anchor")
-
-    fig.savefig("total-clients-on-each-ap.pdf")
-    #plt.show()
-    plt.close(fig)
-
-    #-----------------------------
-    # Plot clients on each AP only when num_clients>=40
-    fig, ax = plt.subplots()
-    ax.set(xlabel='Days', ylabel='Number of clients',
-           title='Average number of wifi clients per hour on each AP')
-
-    min_value = 50
     for ap_id, a in per_ap.items():
         happy = False
         for y in a['hour']['y']:
-            if y >= min_value:
+            if y >= min_num_clients:
                 happy = True
                 break
 
         if not happy:
             continue
 
-        log.info("Ploting average number of clients per hour on AP {name} (when  num_clients > {min})"
-                 .format(name=a['ap_name'], min=min_value))
+        log.info("Ploting average number of clients per hour on AP {name} (when num_clients > {min})"
+                 .format(name=a['ap_name'], min=min_num_clients))
         ax.plot(a['hour']['x'], a['hour']['y'],
                 label=a['ap_name'])
 
@@ -451,11 +439,14 @@ def plot_per_ap(per_ap, meta, log):
     plt.setp(ax.get_xticklabels(), rotation=20, ha="right",
          rotation_mode="anchor")
 
-    fig.savefig("total-clients-on-each-ap-large.pdf")
-    plt.show()
+    fig.savefig("total-clients-on-each-ap-min-clients={min}.pdf"
+                .format(min=min_num_clients))
+    #plt.show()
     plt.close(fig)
 
-def load_ap_coordinates(log):
+#####################################################################
+
+def load_ap_animation_coordinates(log):
     aps = {
         'AP-Chapel'       : { 'y': 6, 'x': 8,  'shortname' : ' Chapel' },
         'AP-Business'     : { 'y': 6, 'x': 9,  'shortname' : 'Business' },
@@ -530,11 +521,11 @@ def load_ap_coordinates(log):
 
     return aps, timestamp
 
-def plot_scatter_listize(data, coords, log):
+def plot_scatter_animation_listize(data, coords, log):
     # Key: timestamp
-    output    = dict()
+    output = dict()
 
-    for _, ap in data.items():
+    for ap in data.values():
         name = ap['ap_name']
         x = coords[name]['x']
         y = coords[name]['y']
@@ -622,8 +613,8 @@ def plot_scatter_make_title(dt, dayname=False, hour_min=False, tz=False):
 def plot_scatter_set_labels(coords):
     for _, coord in coords.items():
         name = coord['shortname']
-        x = coord['x'] - 0.5
-        y = coord['y'] + 0.5
+        x    = coord['x'] - 0.5
+        y    = coord['y'] + 0.5
 
         plt.text(x, y, name)
 
@@ -763,15 +754,136 @@ def plot_scatter_write_animations(fig, ap_listized_data, ap_coords,
     if len(artists) > 0:
         _write_movie(fig, artists, dt_current)
 
-def plot_scatter_ap_clients(ap_data, log):
+def plot_scatter_ap_clients_animation(ap_data, log):
     # Subplots gives us a larger plot area (vs. plt.figure()).
     fig, _ = plt.subplots()
     fig.tight_layout()
 
-    ap_coords, timestamp_coord = load_ap_coordinates(log)
-    ap_listized_data = plot_scatter_listize(ap_data, ap_coords, log)
+    ap_coords, timestamp_coord = load_ap_animation_coordinates(log)
+    ap_listized_data = plot_scatter_animation_listize(ap_data,
+                                                      ap_coords, log)
     plot_scatter_write_animations(fig, ap_listized_data, ap_coords,
                                   timestamp_coord, log)
+
+#--------------------------------------------------------------------
+
+def plot_scatter_busy_aps(ap_data, min_num_clients,
+                          green, yellow, red, log):
+    def _get_color(val):
+        if val >= red:
+            return 'r'
+        elif val >= yellow:
+            return 'y'
+        else:
+            return 'g'
+
+    #------------------------------------------------------------
+
+    def _compute(ap_data, min_num_clients, log):
+        y        = 0
+        output   = dict()
+        date_min = None
+        date_max = None
+        for ap in ap_data.values():
+            y       = y + 1
+            ap_name = ap['ap_name']
+            raw     = ap['minute']['raw']
+            log.info("Examining busy information for AP {name}"
+                     .format(name=ap_name))
+
+            if not ap_name in output:
+                output[ap_name] = dict()
+
+            # Iterate over all the timestamps in the raw data (which
+            # will span mall the days).
+            for dt, count in raw.items():
+                date = dt.date()
+
+                if not date in output[ap_name]:
+                    output[ap_name][date] = {
+                        'name'  : ap_name,
+                        'date'  : date,
+                        'x'     : None, # Calculate this later
+                        'y'     : y,
+                        'count' : 0,
+                        'value' : None, # Calculate this later
+                        'color' : None, # Calculate this later
+                    }
+
+                if date_min is None or date < date_min:
+                    date_min = date
+                if date_max is None or date > date_max:
+                    date_max = date
+
+                if count >= min_num_clients:
+                    output[ap_name][date]['count'] += 1
+
+        # Push the axes out just a skosh
+        one_day   = timedelta(days=1)
+        date_min -= one_day
+        date_max += one_day
+
+        # Now that we have final counts, assign circle sizes, colors,
+        # and x values.
+        for ap_name, ap_item in output.items():
+            for date, item in ap_item.items():
+                # Scale the value to be a respectible circle size
+                pct           = item['count'] / range_val
+                scaled_value  = min_scale_val + pct * range_scale_val
+
+                item['value'] = scaled_value
+                item['color'] = _get_color(item['count'])
+
+                delta         = date - date_min
+                item['x']     = delta.days
+
+        return output
+
+    #------------------------------------------------------------
+
+    def _listize(output, log):
+        x     = list()
+        y     = list()
+        size  = list()
+        color = list()
+
+        for ap_name, ap_item in output.items():
+            for date, item in ap_item.items():
+                x.append(item['x'])
+                y.append(item['y'])
+                size.append(item['value'])
+                color.append(item['color'])
+
+        return x, y, size, color
+
+    #------------------------------------------------------------
+
+    # Subplots gives us a larger plot area (vs. plt.figure()).
+    fig, ax = plt.subplots()
+    fig.tight_layout()
+
+    title='How often a given APs are "full"'
+    ax.set(xlabel='Date', ylabel='AP', title=title)
+
+    # Run through the data and compute
+    output = _compute(ap_data, min_num_clients, log)
+
+    # Now re-orient the data into 4 discrete lists: x, y, size, color
+    x, y, size, color = _listize(output, log)
+
+    plot = plt.scatter(x=x, y=y, s=size, c=color)
+
+    ax.get_xaxis().set_major_locator(mdates.DayLocator(interval=1))
+    ax.get_xaxis().set_major_formatter(mdates.DateFormatter("%a %b %d"))
+    ax.grid()
+    plt.setp(ax.get_xticklabels(), rotation=20, ha="right",
+         rotation_mode="anchor")
+
+    fig.savefig('big-scatter.pdf')
+    plt.close(fig)
+
+    exit(0)
+
 
 #####################################################################
 
@@ -1022,8 +1134,13 @@ def main():
 
     #plot_total_clients(total, continuous, log)
     #plot_per_controller(per_controller, step, log)
-    #plot_per_ap(per_ap, step, log)
-    #plot_scatter_ap_clients(per_ap, log)
+    #plot_per_ap(per_ap, step, min_num_clients=0, log=log)
+    #plot_per_ap(per_ap, step, min_num_clients=50, log=log)
+
+    #plot_scatter_ap_clients_animation(per_ap, log)
+    plot_scatter_busy_aps(per_ap, min_num_clients=40,
+                          green=5, yellow=10, red=20,
+                          log=log)
 
     macs = {
         'kathryn' : 'c0:b6:58:b4:f4:79',
