@@ -818,10 +818,11 @@ def plot_scatter_busy_aps(ap_data, min_num_clients,
                 if count >= min_num_clients:
                     output[ap_name][date]['count'] += 1
 
-        # Push the axes out just a skosh
-        one_day   = timedelta(days=1)
-        date_min -= one_day
-        date_max += one_day
+        # Make a ytick list of the correct length.  Note that we have
+        # y values start at 1, and the notation below will make an
+        # array starting with index 1.  So make the list be (y+1)
+        # entries in length.
+        ytick_labels = [ None ] * (y + 1)
 
         # Now that we have final counts, assign circle sizes, colors,
         # and x values.
@@ -833,11 +834,10 @@ def plot_scatter_busy_aps(ap_data, min_num_clients,
 
                 item['value'] = scaled_value
                 item['color'] = _get_color(item['count'])
+                item['x']     = date
+                ytick_labels[item['y']] = item['name']
 
-                delta         = date - date_min
-                item['x']     = delta.days
-
-        return output
+        return output, date_min, date_max, ytick_labels
 
     #------------------------------------------------------------
 
@@ -858,32 +858,59 @@ def plot_scatter_busy_aps(ap_data, min_num_clients,
 
     #------------------------------------------------------------
 
+    # We have lots of text -- make it small...
+    plt.rcParams.update({'axes.labelsize' : '6'})
+    plt.rcParams.update({'xtick.labelsize' : '6'})
+    plt.rcParams.update({'ytick.labelsize' : '6'})
+
     # Subplots gives us a larger plot area (vs. plt.figure()).
     fig, ax = plt.subplots()
-    fig.tight_layout()
+    #fig.tight_layout()
 
-    title='How often a given APs are "full"'
-    ax.set(xlabel='Date', ylabel='AP', title=title)
+    title = ('How often a given APs have >={num} clients per day\n(green>={g}, yellow>={y}, red>={r})'
+             .format(num=min_num_clients, g=green, y=yellow, r=red))
+    ax.set(title=title)
 
     # Run through the data and compute
-    output = _compute(ap_data, min_num_clients, log)
+    output, date_min, date_max, ytick_labels = _compute(ap_data,
+                                                        min_num_clients,
+                                                        log)
+
+    # Push the axes out just a skosh
+    one_day   = timedelta(days=1)
+    date_min -= one_day
+    date_max += one_day
 
     # Now re-orient the data into 4 discrete lists: x, y, size, color
     x, y, size, color = _listize(output, log)
 
     plot = plt.scatter(x=x, y=y, s=size, c=color)
 
-    ax.get_xaxis().set_major_locator(mdates.DayLocator(interval=1))
-    ax.get_xaxis().set_major_formatter(mdates.DateFormatter("%a %b %d"))
     ax.grid()
+    ax.get_xaxis().set_major_locator(mdates.DayLocator(interval=3))
+    ax.get_xaxis().set_major_formatter(mdates.DateFormatter("%a %b %d"))
     plt.setp(ax.get_xticklabels(), rotation=20, ha="right",
          rotation_mode="anchor")
+    ax.get_xaxis().set_minor_locator(matplotlib.ticker.MultipleLocator(1))
 
-    fig.savefig('big-scatter.pdf')
+    # If we don't set the X axis limits, sometimes Matplotlib picks
+    # crazy large limits (i.e., for lots of X values below and above
+    # where our data is).
+    ax.set_xlim(left=date_min - one_day,
+                right=date_max + one_day)
+
+    ax.set_yticklabels(ytick_labels)
+    ax.get_yaxis().set_major_locator(matplotlib.ticker.MultipleLocator(1))
+
+    # Need to set the Y axis limits so that our Y tick labels exactly
+    # match up.  Note that matplotlib will ignore ytick_label[0]
+    # because it is None.  Our first Y value will be at 1, so set the
+    # Y limit to be 0.5 (i.e., first major line will be at 1, but
+    # there will be a little white space below it).
+    ax.set_ylim(0.5, len(ytick_labels) + 0.5)
+
+    fig.savefig('full-ap-frequency.pdf')
     plt.close(fig)
-
-    exit(0)
-
 
 #####################################################################
 
@@ -1114,9 +1141,11 @@ def main():
     databases = read_databases(args, log)
 
     first = analyze_find_first_date(databases)
-    log.debug("Found first date in databases: {dt}".format(dt=first))
+    log.debug("Found first date in databases: {dt}"
+              .format(dt=first))
 
-    total, per_controller, per_ap = analyze_databases(databases, first, log)
+    total, per_controller, per_ap = analyze_databases(databases,
+                                                      first, log)
 
     # Which plot?
     # 1. Continuous
@@ -1142,11 +1171,11 @@ def main():
                           green=5, yellow=10, red=20,
                           log=log)
 
-    macs = {
-        'kathryn' : 'c0:b6:58:b4:f4:79',
-    }
-    for name, mac in macs.items():
-        plot_follow_mac(name, mac, databases, first, log)
+    #macs = {
+    #    'kathryn' : 'c0:b6:58:b4:f4:79',
+    #}
+    #for name, mac in macs.items():
+    #    plot_follow_mac(name, mac, databases, first, log)
 
 if __name__ == "__main__":
     main()
