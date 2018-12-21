@@ -48,6 +48,12 @@ min_scale_val   = 0
 max_scale_val   = 500
 range_scale_val = max_scale_val - min_scale_val
 
+wlan_names = [
+    'mercy1',
+    'Mercy-guest',
+    'MercyStudent',
+]
+
 #-------------------------------------------------------------------
 
 # Timezone information
@@ -459,8 +465,8 @@ def load_ap_animation_coordinates(log):
         'AP101'           : { 'y': 5, 'x': 7,  'shortname' : '   101' },
         'AP-Athletic'     : { 'y': 5, 'x': 10, 'shortname' : 'Athletic' },
 
-        'AP-MediaCenter2' : { 'y': 4, 'x': 1,  'shortname' : '   LC2' },
-        'AP-MediaCenter1' : { 'y': 4, 'x': 2,  'shortname' : '   LC1' },
+        'AP-MediaCenter1' : { 'y': 4, 'x': 1,  'shortname' : '   MC1' },
+        'AP-MediaCenter2' : { 'y': 4, 'x': 2,  'shortname' : '   MC2' },
         'AP106'           : { 'y': 4, 'x': 3,  'shortname' : '   106' },
         'AP107'           : { 'y': 4, 'x': 5,  'shortname' : '   107' },
         'AP-Locker'       : { 'y': 4, 'x': 10, 'shortname' : ' Locker' },
