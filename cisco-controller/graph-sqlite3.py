@@ -1161,21 +1161,25 @@ def main():
         'title'    : 'Average number of clients per hour',
     }
 
-    #plot_total_clients(total, continuous, log)
-    #plot_per_controller(per_controller, step, log)
-    #plot_per_ap(per_ap, step, min_num_clients=0, log=log)
-    #plot_per_ap(per_ap, step, min_num_clients=50, log=log)
+    a_lot_of_clients = 50
 
-    #plot_scatter_ap_clients_animation(per_ap, log)
-    plot_scatter_busy_aps(per_ap, min_num_clients=40,
+    plot_total_clients(total, continuous, log)
+    plot_per_controller(per_controller, step, log)
+    plot_per_ap(per_ap, step, min_num_clients=0, log=log)
+    plot_per_ap(per_ap, step,
+                min_num_clients=a_lot_of_clients, log=log)
+
+    plot_scatter_ap_clients_animation(per_ap, log)
+    plot_scatter_busy_aps(per_ap,
+                          min_num_clients=a_lot_of_clients,
                           green=5, yellow=10, red=20,
                           log=log)
 
-    #macs = {
-    #    'kathryn' : 'c0:b6:58:b4:f4:79',
-    #}
-    #for name, mac in macs.items():
-    #    plot_follow_mac(name, mac, databases, first, log)
+    macs = {
+        'kathryn' : 'c0:b6:58:b4:f4:79',
+    }
+    for name, mac in macs.items():
+        plot_follow_mac(name, mac, databases, first, log)
 
 if __name__ == "__main__":
     main()
