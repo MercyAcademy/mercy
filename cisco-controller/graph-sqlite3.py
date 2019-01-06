@@ -1256,7 +1256,9 @@ def main():
 
     plot_total_clients(total, continuous, log)
     plot_per_controller(per_controller, step, log)
-    plot_per_ap(per_ap, step, min_num_clients=0, log=log)
+
+    plot_per_ap(per_ap, step,
+                min_num_clients=0, log=log)
     plot_per_ap(per_ap, step,
                 min_num_clients=a_lot_of_clients, log=log)
 
