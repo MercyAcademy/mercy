@@ -1145,6 +1145,19 @@ def read_databases(args, log):
         local_month = match.group(2)
         local_day   = match.group(3)
 
+        keep = False
+        for date in args.dates:
+            if (local_year  == date['year'] and
+                local_month == date['month'] and
+                local_day   == date['day']):
+                keep = True
+                break
+
+        if not keep:
+            log.debug("Skipping {f} due to --dates"
+                     .format(f=f.name))
+            continue
+
         log.info("Reading database {f}..."
                  .format(f=f.path))
 
@@ -1162,6 +1175,10 @@ def read_databases(args, log):
             databases[local_year][local_month] = dict()
 
         databases[local_year][local_month][local_day] = db
+
+    if len(databases) == 0:
+        log.info("No databases read -- nothing to do")
+        exit(0)
 
     return databases
 
@@ -1202,6 +1219,10 @@ def setup_cli():
                         action='store_true',
                         help='Enable extra output for debugging')
 
+    parser.add_argument('--dates',
+                        action='append',
+                        help='Comma-delimited list of YYYY-MM-DD dates to analyze (if not specified, use all data available)')
+
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--ssid',
                         help='Only analyze a single SSID')
@@ -1220,6 +1241,26 @@ def setup_cli():
         print("Error: MAC list file '{f}' does not exist"
               .format(f=args.mac_list_file))
         exit(1)
+
+    dates = list()
+    r = re.compile('(\d\d\d\d)-(\d\d)-(\d\d)')
+    for date in args.dates:
+        for d in date.strip().split(','):
+            match = r.match(d)
+
+            if not match:
+                print("--date argument is not YYYY-MM-DD form: {d} -- skipped"
+                      .format(d=d))
+                continue
+
+            dates.append({
+                'raw'   : d,
+                'year'  : match.group(1),
+                'month' : match.group(2),
+                'day'   : match.group(3),
+            })
+
+    args.dates = dates
 
     return args
 
