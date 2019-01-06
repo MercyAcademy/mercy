@@ -148,8 +148,6 @@ CREATE TABLE client_sightings (
 
 #####################################################################
 
-#####################################################################
-
 def get_color(value):
     if value <= green_max:
         color = 'g'
@@ -1059,9 +1057,77 @@ def read_database(filename, log):
 
     return db
 
+def filter_database_ssid(ssid, db, log):
+    log.debug("Filtering database based on SSID: {ssid}"
+              .format(ssid=ssid))
+
+    # Build up new wlans, clients, client sightings dictionaries with
+    # only the WLANs corresponding to the desired SSIDs
+    new_wlans            = dict()
+    new_clients          = dict()
+    new_client_sightings = dict()
+    for wlan_id, wlan in db['wlans']['rows'].items():
+        if wlan['ssid'] != ssid:
+            continue
+
+        # This is a good WLAN
+        new_wlans[wlan_id] = wlan
+
+    db['wlans']['rows'] = new_wlans
+
+    # Now search all the client_sightings for the desired
+    # WLANs.
+    for client_sighting_id, client_sighting in db['client_sightings']['rows'].items():
+        wlan_index = client_sighting['wlan_index']
+        if wlan_index not in new_wlans:
+            continue
+
+        # This is a good client sighting
+        new_client_sightings[client_sighting_id] = client_sighting
+
+    db['client_sightings']['rows'] = new_client_sightings
+
+def filter_database_macs(macs, db, log):
+    log.debug("Filtering database based on MAC list...")
+
+    # Build up new client/client_sightings dictionaries with only the
+    # desired MACs
+    new_clients          = dict()
+    new_client_sightings = dict()
+    for client_id, client in db['clients']['rows'].items():
+        mac = client['mac']
+        if mac not in macs:
+            continue
+
+        # Keep this client
+        new_clients[client_id] = client
+
+        # Go through all the client sightings and save the sightings
+        # of this client
+        for sighting_id, sighting in db['client_sightings']['rows'].items():
+            if sighting['client_index'] == client_id:
+                new_client_sightings[sighting_id] = sighting
+
+    db['clients']['rows']          = new_clients
+    db['client_sightings']['rows'] = new_client_sightings
+
 def read_databases(args, log):
     log.debug("Looking for databases in {dir}..."
               .format(dir=args.dir))
+
+    ssid = args.ssid
+
+    # Filter out whitespace, remove #comment lines, and make
+    # everything lower case
+    macs = None
+    if args.mac_list_file:
+        with open(args.mac_list_file, 'r') as f:
+            temp_macs = list(f)
+        macs = list()
+        for mac in temp_macs:
+            mac = mac.lower().strip()
+            if not mac.startswith('#'):
+                macs.append(mac.lower())
 
     databases = dict()
 
@@ -1083,6 +1149,12 @@ def read_databases(args, log):
                  .format(f=f.path))
 
         db = read_database(filename=f.path, log=log)
+
+        # Filter based on --ssid and --mac-file-list
+        if ssid:
+            filter_database_ssid(ssid=ssid, db=db, log=log)
+        elif macs:
+            filter_database_macs(macs=macs, db=db, log=log)
 
         if not local_year in databases:
             databases[local_year] = dict()
@@ -1114,6 +1186,8 @@ def setup_logging(args):
 
     return log
 
+#--------------------------------------------------------------------
+
 def setup_cli():
     parser = argparse.ArgumentParser(description='Analyze Cisco wireless controller stats')
 
@@ -1128,12 +1202,23 @@ def setup_cli():
                         action='store_true',
                         help='Enable extra output for debugging')
 
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--ssid',
+                        help='Only analyze a single SSID')
+    group.add_argument('--mac-list-file',
+                        help='Only analyze the (case-insensitive) MAC addresses listed in the file (of the form xx:xx:xx:xx:xx:xx)')
+
     args = parser.parse_args()
 
     args.dir = os.path.abspath(args.dir)
     if not os.path.exists(args.dir):
         print("Error: directory '{dir}' does not exist"
               .format(dir=args.dir))
+        exit(1)
+
+    if args.mac_list_file and not os.path.exists(args.mac_list_file):
+        print("Error: MAC list file '{f}' does not exist"
+              .format(f=args.mac_list_file))
         exit(1)
 
     return args
