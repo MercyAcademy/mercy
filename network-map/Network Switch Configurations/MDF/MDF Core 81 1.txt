@@ -1,0 +1,614 @@
+MDF3560-1#show running-config
+Building configuration...
+
+Current configuration : 18962 bytes
+!
+! Last configuration change at 14:26:42 EDT Fri Jul 31 2020 by admin
+! NVRAM config last updated at 14:26:51 EDT Fri Jul 31 2020 by admin
+!
+version 15.2
+no service pad
+service timestamps debug datetime msec localtime
+service timestamps log datetime msec localtime
+service password-encryption
+service compress-config
+!
+hostname MDF3560-1
+!
+boot-start-marker
+boot-end-marker
+!
+!
+vrf definition Mgmt-vrf
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+enable secret 5 $1$F.dB$a4.ru0y/W3XU45HP.yrs..
+!
+username admin privilege 15 secret 5 $1$IHyA$UbGGCpsb9iHctPAuULY6A/
+no aaa new-model
+clock timezone EST -5 0
+clock summer-time EDT recurring
+switch 1 provision ws-c3650-24ts
+!
+!
+!
+!
+!
+ip routing
+!
+ip domain-name mercynt.pri
+!
+!
+qos queue-softmax-multiplier 100
+!
+table-map AutoQos-4.0-Trust-Cos-Table
+ default copy
+!
+!
+crypto pki trustpoint TP-self-signed-2661616897
+ enrollment selfsigned
+ subject-name cn=IOS-Self-Signed-Certificate-2661616897
+ revocation-check none
+ rsakeypair TP-self-signed-2661616897
+!
+!
+crypto pki certificate chain TP-self-signed-2661616897
+ certificate self-signed 01
+  3082022B 30820194 A0030201 02020101 300D0609 2A864886 F70D0101 05050030
+  31312F30 2D060355 04031326 494F532D 53656C66 2D536967 6E65642D 43657274
+  69666963 6174652D 32363631 36313638 3937301E 170D3138 30323036 31343336
+  33335A17 0D323030 31303130 30303030 305A3031 312F302D 06035504 03132649
+  4F532D53 656C662D 5369676E 65642D43 65727469 66696361 74652D32 36363136
+  31363839 3730819F 300D0609 2A864886 F70D0101 01050003 818D0030 81890281
+  8100EEF9 19464D7B 405C06E5 F77CEB89 148C0F7B 9AA0568B 9C00C84D AC55ED40
+  443EA8E3 677306EC D6C21645 2E2DDF49 7C95E07F EA99A698 A8AC718A 8102FF99
+  C5CAF6FF CED5304D 8B9F93D1 C6D9335D 64F1D6E4 297F598F 97F8C6E5 A2F344E2
+  FFC87257 1716C6D2 0E747D9C B61E4600 B8E8A705 C441228B 68BCCABD 87DBD3DF
+  AE5B0203 010001A3 53305130 0F060355 1D130101 FF040530 030101FF 301F0603
+  551D2304 18301680 1479B915 9476FCF6 6657FBD2 2D6DE97B B5B168C9 37301D06
+  03551D0E 04160414 79B91594 76FCF666 57FBD22D 6DE97BB5 B168C937 300D0609
+  2A864886 F70D0101 05050003 818100A8 09381108 72674DA5 93B81658 51AEF3D1
+  D95A5F2F 301F97AC 2059CA06 C723B16C 179433F0 0B2D8F9F 4E2EAFD6 86D1E26B
+  B2AFDC10 BBEDB519 F5D34363 C9318E96 D422D834 4322DE02 BA211A86 07E64F32
+  637613DA 278C8D32 59991465 4168073E 2F21B5BA DC8A02B8 544733F1 C7E87BAF
+  A4555B6E 4DE6F07A AF805B42 E74A0E
+  	quit
+diagnostic bootup level minimal
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+spanning-tree vlan 200 priority 24576
+hw-switch switch 1 logging onboard message level 3
+!
+redundancy
+ mode sso
+!
+!
+!
+class-map match-any AutoQos-4.0-Output-Multimedia-Conf-Queue
+ match dscp af41  af42  af43
+ match cos  4
+class-map match-any AutoQos-4.0-Output-Bulk-Data-Queue
+ match dscp af11  af12  af13
+ match cos  1
+class-map match-any AutoQos-4.0-Output-Priority-Queue
+ match dscp cs4  cs5  ef
+ match cos  5
+class-map match-any AutoQos-4.0-Output-Multimedia-Strm-Queue
+ match dscp af31  af32  af33
+class-map match-any non-client-nrt-class
+class-map match-any AutoQos-4.0-Output-Trans-Data-Queue
+ match dscp af21  af22  af23
+ match cos  2
+class-map match-any AutoQos-4.0-Output-Scavenger-Queue
+ match dscp cs1
+class-map match-any AutoQos-4.0-Output-Control-Mgmt-Queue
+ match dscp cs2  cs3  cs6  cs7
+ match cos  3
+!
+policy-map port_child_policy
+ class non-client-nrt-class
+  bandwidth remaining ratio 10
+policy-map AutoQos-4.0-Output-Policy
+ class AutoQos-4.0-Output-Priority-Queue
+  priority level 1 percent 30
+ class AutoQos-4.0-Output-Control-Mgmt-Queue
+  bandwidth remaining percent 10
+  queue-limit dscp cs2 percent 80
+  queue-limit dscp cs3 percent 90
+  queue-limit dscp cs6 percent 100
+  queue-limit dscp cs7 percent 100
+  queue-buffers ratio 10
+ class AutoQos-4.0-Output-Multimedia-Conf-Queue
+  bandwidth remaining percent 10
+  queue-buffers ratio 10
+ class AutoQos-4.0-Output-Trans-Data-Queue
+  bandwidth remaining percent 10
+  queue-buffers ratio 10
+ class AutoQos-4.0-Output-Bulk-Data-Queue
+  bandwidth remaining percent 4
+  queue-buffers ratio 10
+ class AutoQos-4.0-Output-Scavenger-Queue
+  bandwidth remaining percent 1
+  queue-buffers ratio 10
+ class AutoQos-4.0-Output-Multimedia-Strm-Queue
+  bandwidth remaining percent 10
+  queue-buffers ratio 10
+ class class-default
+  bandwidth remaining percent 25
+  queue-buffers ratio 25
+policy-map AutoQos-4.0-Trust-Cos-Input-Policy
+ class class-default
+  set cos cos table AutoQos-4.0-Trust-Cos-Table
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Port-channel1
+ switchport trunk allowed vlan 1,100,200
+ switchport mode trunk
+!
+interface Port-channel24
+ switchport mode trunk
+ switchport nonegotiate
+!
+interface GigabitEthernet0/0
+ vrf forwarding Mgmt-vrf
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet1/0/1
+ description WATCHGAURD-INTERNAL
+ switchport access vlan 79
+ switchport mode access
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/2
+ switchport access vlan 100
+ switchport mode access
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/3
+ switchport mode trunk
+ switchport nonegotiate
+ shutdown
+!
+interface GigabitEthernet1/0/4
+ switchport mode trunk
+ switchport nonegotiate
+ shutdown
+!
+interface GigabitEthernet1/0/5
+ switchport access vlan 100
+ switchport mode access
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/6
+ switchport access vlan 200
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/7
+ switchport access vlan 100
+ switchport mode access
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/8
+ switchport access vlan 200
+ switchport mode access
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/9
+ switchport access vlan 100
+ switchport mode access
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/10
+ switchport mode trunk
+ switchport nonegotiate
+ channel-group 24 mode on
+!
+interface GigabitEthernet1/0/11
+ switchport trunk allowed vlan 1,100,200
+ switchport mode trunk
+ auto qos trust
+ channel-group 1 mode on
+ service-policy input AutoQos-4.0-Trust-Cos-Input-Policy
+ service-policy output AutoQos-4.0-Output-Policy
+!
+interface GigabitEthernet1/0/12
+ switchport trunk allowed vlan 1,100,200
+ switchport mode trunk
+ auto qos trust
+ channel-group 1 mode on
+ service-policy input AutoQos-4.0-Trust-Cos-Input-Policy
+ service-policy output AutoQos-4.0-Output-Policy
+!
+interface GigabitEthernet1/0/13
+ switchport access vlan 100
+ switchport mode trunk
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/14
+ switchport access vlan 100
+ switchport trunk allowed vlan 1,100,200
+ switchport mode trunk
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/15
+ switchport access vlan 100
+ switchport mode trunk
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/16
+ switchport mode trunk
+ switchport nonegotiate
+ channel-group 24 mode on
+!
+interface GigabitEthernet1/0/17
+ switchport access vlan 100
+ switchport trunk allowed vlan 1,100,200
+ switchport mode trunk
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/18
+ switchport access vlan 100
+ switchport mode trunk
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/19
+ switchport trunk allowed vlan 1,70-72,100
+ switchport mode trunk
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/20
+ switchport access vlan 100
+ switchport trunk allowed vlan 1,100,200
+ switchport mode trunk
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/21
+ description Lantronix xprintserver
+ switchport access vlan 71
+ switchport mode access
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/22
+ description Lantronix xprintserver office edition
+ switchport access vlan 72
+ switchport mode access
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/23
+ switchport mode trunk
+ switchport nonegotiate
+ shutdown
+!
+interface GigabitEthernet1/0/24
+ switchport mode trunk
+ switchport nonegotiate
+ shutdown
+!
+interface GigabitEthernet1/1/1
+ description Link to President IDF
+ switchport mode trunk
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/1/2
+ description Link to Concession IDF
+ switchport mode trunk
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/1/3
+ description Link to Science IDF
+ switchport mode trunk
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface GigabitEthernet1/1/4
+ description Link to Athletics IDF
+ switchport mode trunk
+ switchport nonegotiate
+ spanning-tree portfast
+!
+interface Vlan1
+ ip address 192.168.81.1 255.255.255.0
+ ip helper-address 192.168.101.6
+ ip helper-address 192.168.101.8
+ ip helper-address 172.16.10.2
+ ip helper-address 172.16.10.3
+!
+interface Vlan10
+ description Public IT
+ ip address 172.16.10.1 255.255.255.0
+!
+interface Vlan20
+ description IOT
+ ip address 172.16.20.1 255.255.255.0
+ ip access-group 2020 in
+ ip access-group 2020 out
+ ip helper-address 192.168.101.6
+ ip helper-address 192.168.101.8
+ ip helper-address 172.16.10.2
+ ip helper-address 172.16.10.3
+!
+interface Vlan30
+ description Telephones
+ ip address 172.16.30.1 255.255.255.0
+ ip access-group 2030 in
+ ip access-group 2030 out
+ ip helper-address 192.168.101.6
+ ip helper-address 192.168.101.8
+ ip helper-address 172.16.10.2
+ ip helper-address 172.16.10.3
+!
+interface Vlan71
+ description OLD Mercy-Faculty-Staff-SSID
+ ip address 192.168.71.1 255.255.248.0
+ ip access-group 2071 in
+ ip access-group 2071 out
+ ip helper-address 192.168.101.8
+ ip helper-address 192.168.101.6
+ ip helper-address 172.16.10.2
+ ip helper-address 172.16.10.3
+!
+interface Vlan72
+ description OLD Mercy-Students-SSID
+ ip address 192.168.32.1 255.255.248.0
+ ip access-group 2072 in
+ ip access-group 2072 out
+ ip helper-address 192.168.101.8
+ ip helper-address 192.168.101.6
+ ip helper-address 172.16.10.2
+ ip helper-address 172.16.10.3
+!
+interface Vlan79
+ description TO-FIREWALL
+ ip address 192.168.79.1 255.255.255.0
+!
+interface Vlan100
+ description OLD Faculty
+ ip address 192.168.101.3 255.255.254.0
+ ip access-group 2100 in
+ ip access-group 2100 out
+!
+interface Vlan110
+ description Faculty and staff
+ ip address 172.16.110.1 255.255.254.0
+ ip access-group 2110 in
+ ip access-group 2110 out
+ ip helper-address 192.168.101.6
+ ip helper-address 192.168.101.8
+ ip helper-address 172.16.10.2
+ ip helper-address 172.16.10.3
+!
+interface Vlan120
+ description Students
+ ip address 172.16.120.1 255.255.248.0
+ ip access-group 2120 in
+ ip access-group 2120 out
+ ip helper-address 192.168.101.6
+ ip helper-address 192.168.101.8
+ ip helper-address 172.16.10.2
+ ip helper-address 172.16.10.3
+!
+interface Vlan130
+ description Guests
+ ip address 172.16.130.1 255.255.255.0
+ ip access-group 2130 in
+ ip access-group 2130 out
+ ip helper-address 192.168.101.6
+ ip helper-address 192.168.101.8
+ ip helper-address 172.16.10.2
+ ip helper-address 172.16.10.3
+!
+interface Vlan140
+ description Shared devices
+ ip address 172.16.140.1 255.255.255.0
+ ip access-group 2140 in
+ ip access-group 2140 out
+ ip helper-address 192.168.101.6
+ ip helper-address 192.168.101.8
+ ip helper-address 172.16.10.2
+ ip helper-address 172.16.10.3
+!
+interface Vlan200
+ ip address 192.168.200.1 255.255.255.0
+!
+interface Vlan220
+ ip address 172.16.220.1 255.255.252.0
+ ip access-group 2220 in
+ ip access-group 2220 out
+ ip helper-address 192.168.101.8
+ ip helper-address 192.168.101.6
+ ip helper-address 172.16.10.2
+ ip helper-address 172.16.10.3
+!
+interface Vlan299
+ ip address 192.168.254.1 255.255.255.0
+!
+ip forward-protocol nd
+no ip http server
+ip http authentication local
+ip http secure-server
+ip route 0.0.0.0 0.0.0.0 192.168.79.254
+ip route 192.168.250.0 255.255.255.0 192.168.79.250
+!
+!
+access-list 2001 permit ip 172.16.1.0 0.0.0.255 host 192.168.101.6
+access-list 2001 permit ip 172.16.1.0 0.0.0.255 host 192.168.101.8
+access-list 2001 permit ip 172.16.1.0 0.0.0.255 host 172.16.10.2
+access-list 2001 permit ip 172.16.1.0 0.0.0.255 host 172.16.10.3
+access-list 2001 permit ip 172.16.1.0 0.0.0.255 172.16.1.0 0.0.0.255
+access-list 2001 deny   ip 172.16.1.0 0.0.0.255 10.0.0.0 0.255.255.255
+access-list 2001 deny   ip 172.16.1.0 0.0.0.255 192.168.0.0 0.0.255.255
+access-list 2001 deny   ip 172.16.1.0 0.0.0.255 172.16.0.0 0.0.255.255
+access-list 2001 permit ip any any
+access-list 2001 remark Private IT: inband + internet
+access-list 2020 permit ip 172.16.20.0 0.0.0.255 host 192.168.101.6
+access-list 2020 permit ip 172.16.20.0 0.0.0.255 host 192.168.101.8
+access-list 2020 permit ip 172.16.20.0 0.0.0.255 host 172.16.10.2
+access-list 2020 permit ip 172.16.20.0 0.0.0.255 host 172.16.10.3
+access-list 2020 deny   ip 172.16.20.0 0.0.0.255 10.0.0.0 0.255.255.255
+access-list 2020 deny   ip 172.16.20.0 0.0.0.255 192.168.0.0 0.0.255.255
+access-list 2020 deny   ip 172.16.20.0 0.0.0.255 172.16.0.0 0.0.255.255
+access-list 2020 permit ip any any
+access-list 2030 permit ip 172.16.30.0 0.0.0.255 host 192.168.101.6
+access-list 2030 permit ip 172.16.30.0 0.0.0.255 host 192.168.101.8
+access-list 2030 permit ip 172.16.30.0 0.0.0.255 host 172.16.10.2
+access-list 2030 permit ip 172.16.30.0 0.0.0.255 host 172.16.10.3
+access-list 2030 deny   ip 172.16.30.0 0.0.0.255 10.0.0.0 0.255.255.255
+access-list 2030 deny   ip 172.16.30.0 0.0.0.255 192.168.0.0 0.0.255.255
+access-list 2030 deny   ip 172.16.30.0 0.0.0.255 172.16.0.0 0.0.255.255
+access-list 2030 permit ip any any
+access-list 2030 remark Telephones: internet only
+access-list 2071 permit ip 192.168.71.0 0.0.0.3 10.0.0.0 0.255.255.255
+access-list 2071 permit ip 192.168.71.0 0.0.0.3 192.168.0.0 0.0.255.255
+access-list 2071 permit ip 192.168.71.0 0.0.0.3 172.16.0.0 0.0.255.255
+access-list 2071 deny   ip any 192.168.81.0 0.0.0.255
+access-list 2071 deny   ip any 172.16.1.0 0.0.0.255
+access-list 2071 permit ip any any
+access-list 2071 remark Faculty wifi: deny private IT
+access-list 2071 remark Faculty wifi
+access-list 2071 remark Faculty wifi (old)
+access-list 2071 remark Faculty wifi (old): deny private IT
+access-list 2072 remark Students wifi: deny private IT
+access-list 2072 deny   ip any 192.168.81.0 0.0.0.255
+access-list 2072 deny   ip any 172.16.1.0 0.0.0.255
+access-list 2072 permit ip any any
+access-list 2072 remark Students wifi (old): deny private IT
+access-list 2072 remark Faculty wired (old)
+access-list 2100 permit ip host 192.168.101.121 10.0.0.0 0.255.255.255
+access-list 2100 permit ip host 192.168.101.121 192.168.0.0 0.0.255.255
+access-list 2100 permit ip host 192.168.101.121 172.16.0.0 0.0.255.255
+access-list 2100 permit ip any any
+access-list 2110 permit ip 172.16.110.0 0.0.1.255 host 192.168.101.6
+access-list 2110 permit ip 172.16.110.0 0.0.1.255 host 192.168.101.8
+access-list 2110 permit ip 172.16.110.0 0.0.1.255 host 172.16.10.2
+access-list 2110 permit ip 172.16.110.0 0.0.1.255 host 172.16.10.3
+access-list 2110 permit ip 172.16.110.0 0.0.1.255 172.16.140.0 0.0.0.255
+access-list 2110 permit ip 172.16.110.0 0.0.1.255 172.16.110.0 0.0.1.255
+access-list 2110 deny   ip 172.16.110.0 0.0.1.255 10.0.0.0 0.255.255.255
+access-list 2110 deny   ip 172.16.110.0 0.0.1.255 192.168.0.0 0.0.255.255
+access-list 2110 deny   ip 172.16.110.0 0.0.1.255 172.16.0.0 0.0.255.255
+access-list 2110 permit ip any any
+access-list 2110 remark Faculty: Shared devices + internet
+access-list 2120 permit ip 172.16.120.0 0.0.7.255 host 192.168.101.6
+access-list 2120 permit ip 172.16.120.0 0.0.7.255 host 192.168.101.8
+access-list 2120 permit ip 172.16.120.0 0.0.7.255 host 172.16.10.2
+access-list 2120 permit ip 172.16.120.0 0.0.7.255 host 172.16.10.3
+access-list 2120 permit ip 172.16.120.0 0.0.7.255 172.16.140.0 0.0.0.255
+access-list 2120 permit ip 172.16.120.0 0.0.7.255 172.16.120.0 0.0.7.255
+access-list 2120 deny   ip 172.16.120.0 0.0.7.255 10.0.0.0 0.255.255.255
+access-list 2120 deny   ip 172.16.120.0 0.0.7.255 192.168.0.0 0.0.255.255
+access-list 2120 deny   ip 172.16.120.0 0.0.7.255 172.16.0.0 0.0.255.255
+access-list 2120 permit ip any any
+access-list 2120 remark Students: Shared devices + internet
+access-list 2130 permit ip 172.16.130.0 0.0.0.255 host 192.168.101.6
+access-list 2130 permit ip 172.16.130.0 0.0.0.255 host 192.168.101.8
+access-list 2130 permit ip 172.16.130.0 0.0.0.255 host 172.16.10.2
+access-list 2130 permit ip 172.16.130.0 0.0.0.255 host 172.16.10.3
+access-list 2130 permit ip 172.16.130.0 0.0.0.255 172.16.140.0 0.0.0.255
+access-list 2130 deny   ip 172.16.130.0 0.0.0.255 10.0.0.0 0.255.255.255
+access-list 2130 deny   ip 172.16.130.0 0.0.0.255 192.168.0.0 0.0.255.255
+access-list 2130 deny   ip 172.16.130.0 0.0.0.255 172.16.0.0 0.0.255.255
+access-list 2130 permit ip any any
+access-list 2130 remark Guest: Shared devices + internet
+access-list 2140 permit ip 172.16.140.0 0.0.0.255 host 192.168.101.6
+access-list 2140 permit ip 172.16.140.0 0.0.0.255 host 192.168.101.8
+access-list 2140 permit ip 172.16.140.0 0.0.0.255 host 172.16.10.2
+access-list 2140 permit ip 172.16.140.0 0.0.0.255 host 172.16.10.3
+access-list 2140 permit ip 172.16.140.0 0.0.0.255 172.16.110.0 0.0.1.255
+access-list 2140 permit ip 172.16.140.0 0.0.0.255 172.16.120.0 0.0.7.255
+access-list 2140 permit ip 172.16.140.0 0.0.0.255 172.16.130.0 0.0.0.255
+access-list 2140 permit ip 172.16.140.0 0.0.0.255 172.16.140.0 0.0.0.255
+access-list 2140 deny   ip 172.16.140.0 0.0.0.255 10.0.0.0 0.255.255.255
+access-list 2140 deny   ip 172.16.140.0 0.0.0.255 192.168.0.0 0.0.255.255
+access-list 2140 deny   ip 172.16.140.0 0.0.0.255 172.16.0.0 0.0.255.255
+access-list 2140 permit ip any any
+access-list 2140 remark Shared devices: Faculty + students + internet
+access-list 2220 permit ip 172.16.220.0 0.0.3.255 host 192.168.101.6
+access-list 2220 permit ip 172.16.220.0 0.0.3.255 host 192.168.101.8
+access-list 2220 remark Public: internet only
+access-list 2220 permit ip 172.16.220.0 0.0.3.255 host 172.16.10.2
+access-list 2220 permit ip 172.16.220.0 0.0.3.255 host 172.16.10.3
+access-list 2220 deny   ip 172.16.220.0 0.0.3.255 10.0.0.0 0.255.255.255
+access-list 2220 deny   ip 172.16.220.0 0.0.3.255 192.168.0.0 0.0.255.255
+access-list 2220 deny   ip 172.16.220.0 0.0.3.255 172.16.0.0 0.0.255.255
+access-list 2220 permit ip any any
+!
+!
+!
+line con 0
+ login local
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0 4
+ login local
+ transport input ssh
+line vty 5 15
+ login local
+ transport input ssh
+!
+ntp server 192.5.41.40
+ntp server 192.5.41.41 prefer
+wsma agent exec
+ profile httplistener
+ profile httpslistener
+!
+wsma agent config
+ profile httplistener
+ profile httpslistener
+!
+wsma agent filesys
+ profile httplistener
+ profile httpslistener
+!
+wsma agent notify
+ profile httplistener
+ profile httpslistener
+!
+!
+wsma profile listener httplistener
+ transport http
+!
+wsma profile listener httpslistener
+ transport https
+!
+ap group default-group
+end
+
+MDF3560-1#

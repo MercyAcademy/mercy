@@ -1,0 +1,56 @@
+Running configuration:
+
+; J9727A Configuration Editor; Created on release #WB.15.17.0009
+; Ver #07:eb.8f.fc.f3.ff.37.2d:89
+
+hostname "CONCESSION-STAND"
+module 1 type j9727a
+ip default-gateway 192.168.81.1
+interface 17
+   speed-duplex 100-half
+   exit
+snmp-server community "public" unrestricted
+snmp-server contact "Mark Murray"
+oobm
+   ip address dhcp-bootp
+   exit
+vlan 1
+   name "DEFAULT_VLAN"
+   no untagged 7-20
+   untagged 1-6,21-24,A1-A2,B1-B2
+   ip address 192.168.81.69 255.255.255.0
+   exit
+vlan 71
+   name "Mercy-Faculty-Staff"
+   tagged 1-6,21-24
+   no ip address
+   exit
+vlan 72
+   name "Mercy-Student"
+   tagged 1-6,21-24
+   no ip address
+   exit
+vlan 100
+   name "Wired"
+   untagged 7-20
+   tagged 21-24
+   no ip address
+   exit
+vlan 200
+   name "CiscoVoice"
+   tagged 21-24
+   no ip address
+   exit
+vlan 220
+   name "Public wifi"
+   tagged 1-6,21-24
+   no ip address
+   exit
+spanning-tree
+no tftp server
+no autorun
+no dhcp config-file-update
+no dhcp image-file-update
+password manager
+
+CONCESSION-STAND#

@@ -1,0 +1,23 @@
+=~=~=~=~=~=~=~=~=~=~=~= PuTTY log 2019.03.27 08:26:58 =~=~=~=~=~=~=~=~=~=~=~=
+
+
+User Access Verification
+
+Username: admin
+Password: 
+MERCY-2960-A2#show cdp neighbors
+Capability Codes: R - Router, T - Trans Bridge, B - Source Route Bridge
+                  S - Switch, H - Host, I - IGMP, r - Repeater, P - Phone, 
+                  D - Remote, C - CVTA, M - Two-port Mac Relay 
+
+Device ID        Local Intrfce     Holdtme    Capability  Platform  Port ID
+SEPB4E9B0007933  Gig 1/0/18        139             H P M  IP Phone  Port 1
+SEP34A84E60DD9A  Gig 1/0/2         148             H P M  IP Phone  Port 1
+SEP34A84E60DDC5  Gig 1/0/5         164             H P M  IP Phone  Port 1
+SEPB4E9B0007997  Gig 1/0/21        147             H P M  IP Phone  Port 1
+SEP34A84E60C19B  Gig 1/0/11        165             H P M  IP Phone  Port 1
+SEP34A84E60C50A  Gig 1/0/14        173             H P M  IP Phone  Port 1
+SEPB4E9B000789B  Gig 1/0/16        171             H P M  IP Phone  Port 1
+SEP34A84E60C7D3  Gig 1/0/23        162             H P M  IP Phone  Port 1
+SEP34A84E60DDAC  Gig 1/0/20        152             H P M  IP Phone  Port 1
+MERCY-2960-A2#

@@ -1,0 +1,58 @@
+Running configuration:
+
+; J9729A Configuration Editor; Created on release #WB.16.02.0012
+; Ver #0e:01.b0.ee.34.5f.3c.29.eb.9f.fc.f3.ff.37.ef:73
+
+hostname "ADVANCEMENT-OFFICE"
+module 1 type j9729a
+ip default-gateway 192.168.81.1
+snmp-server community "public" unrestricted
+snmp-server contact "Mark Murray"
+oobm
+   ip address dhcp-bootp
+   exit
+vlan 1
+   name "DEFAULT_VLAN"
+   no untagged 11-44
+   untagged 1-10,45-48
+   ip address 192.168.81.67 255.255.255.0
+   exit
+vlan 20
+   name "IOT"
+   tagged 1-10,45-48
+   no ip address
+   exit
+vlan 71
+   name "Mercy-Faculty-Staff"
+   tagged 1-10,45-48
+   no ip address
+   exit
+vlan 72
+   name "Mercy-Student"
+   tagged 1-10,45-48
+   no ip address
+   exit
+vlan 100
+   name "Wired"
+   untagged 11-44
+   tagged 45-48
+   no ip address
+   exit
+vlan 200
+   name "CiscoVoice"
+   tagged 45-48
+   no ip address
+   exit
+vlan 220
+   name "Public wifi"
+   tagged 1-10,45-48
+   no ip address
+   exit
+spanning-tree
+no tftp server
+no autorun
+no dhcp config-file-update
+no dhcp image-file-update
+password manager
+
+ADVANCEMENT-OFFICE#

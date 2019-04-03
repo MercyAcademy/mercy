@@ -1,0 +1,34 @@
+=~=~=~=~=~=~=~=~=~=~=~= PuTTY log 2019.03.27 08:32:11 =~=~=~=~=~=~=~=~=~=~=~=
+
+
+User Access Verification
+
+Username: admin
+Password: 
+MERCY-2960-A1#show cdp neighbors
+Capability Codes: R - Router, T - Trans Bridge, B - Source Route Bridge
+                  S - Switch, H - Host, I - IGMP, r - Repeater, P - Phone, 
+                  D - Remote, C - CVTA, M - Two-port Mac Relay 
+
+Device ID        Local Intrfce     Holdtme    Capability  Platform  Port ID
+SEPB4E9B00069DE  Gig 1/0/11        122             H P M  IP Phone  Port 1
+SEPB4E9B0007944  Gig 1/0/15        160             H P M  IP Phone  Port 1
+SEP1CE6C7981507  Gig 1/0/14        158             H P M  IP Phone  Port 1
+SEPB4E9B0007974  Gig 1/0/3         138             H P M  IP Phone  Port 1
+SEPB4E9B08CA2ED  Gig 1/0/9         136             H P M  IP Phone  Port 1
+SEPB4E9B0006908  Gig 1/0/1         134             H P M  IP Phone  Port 1
+SEP54781A6B0C37  Gig 1/0/4         163             H P M  IP Phone  Port 1
+SEPB4E9B0008D8F  Gig 1/0/18        177             H P M  IP Phone  Port 1
+SEP1CE6C7981386  Gig 1/0/22        126             H P M  IP Phone  Port 1
+SEP54781A6B14B4  Gig 1/0/13        140             H P M  IP Phone  Port 1
+SEPB4E9B0008D8E  Gig 1/0/2         150             H P M  IP Phone  Port 1
+SEPB4E9B0006C6B  Gig 1/0/7         150             H P M  IP Phone  Port 1
+SEP54781A6B0851  Gig 1/0/12        168             H P M  IP Phone  Port 1
+SEP54781A6B1638  Gig 1/0/20        160             H P M  IP Phone  Port 1
+ --More--         
+Device ID        Local Intrfce     Holdtme    Capability  Platform  Port ID
+SEPB4E9B0006CEF  Gig 1/0/10        137             H P M  IP Phone  Port 1
+SEP54781A6B0BC4  Gig 1/0/19        152             H P M  IP Phone  Port 1
+SEPB4E9B0008D97  Gig 1/0/21        178             H P M  IP Phone  Port 1
+SEP34A84E610BB1  Gig 1/0/16        160             H P M  IP Phone  Port 1
+MERCY-2960-A1#
