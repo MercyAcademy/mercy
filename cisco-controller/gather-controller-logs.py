@@ -747,6 +747,8 @@ def db_table_read(cur, name, log):
     result = cur.execute(sql)
     rows   = dict()
     for row in result.fetchall():
+        # sqlite3.Row does not have a .copy() method.
+        # So copy the data manually.
         data = dict()
         for fname in field_names:
             data[fname] = row[fname]
