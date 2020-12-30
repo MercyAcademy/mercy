@@ -1,0 +1,20 @@
+CDP neighbors information
+
+ Port  Device ID                     | Platform                     Capability
+ ----- ----------------------------- + ---------------------------- -----------
+ 1     68 3a 1e 86 33 8a             | Meraki MR52 Cloud Managed AP
+ 1     683a1e86338a                  | 1Meraki MR52 Cloud M         R S
+ 2     68 3a 1e 86 0a 34             | Meraki MR52 Cloud Managed AP
+ 2     683a1e860a34                  | 1Meraki MR52 Cloud M         R S
+ 3     68 3a 1e 85 fa 7c             | Meraki MR52 Cloud Managed AP
+ 3     683a1e85fa7c                  | 1Meraki MR52 Cloud M         R S
+ 4     68 3a 1e 86 35 58             | Meraki MR52 Cloud Managed AP
+ 4     683a1e863558                  | 1Meraki MR52 Cloud M         R S
+ 5     68 3a 1e 85 f7 f8             | Meraki MR52 Cloud Managed AP
+ 5     683a1e85f7f8                  | 1Meraki MR52 Cloud M         R S
+ 7     ec b1 d7 39 5d ee             |
+ 8     94 57 a5 ee 25 2c             |
+ 11    00 60 ef 26 8b 29             |
+ 11    00 60 ef 28 54 fd             |
+ 23    MERCY-2960-B1                 | Cisco IOS Software, C2960... S
+ 24    MDF3560-1.mercynt.pri         | Cisco IOS Software, Catal... R S

@@ -1,0 +1,5 @@
+CDP neighbors information
+
+ Port  Device ID                     | Platform                     Capability
+ ----- ----------------------------- + ---------------------------- -----------
+ 48    MDF3560-1.mercynt.pri         | Cisco IOS Software, Catal... R S

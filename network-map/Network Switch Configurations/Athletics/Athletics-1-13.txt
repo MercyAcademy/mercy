@@ -1,0 +1,58 @@
+Running configuration:
+
+; J9727A Configuration Editor; Created on release #WB.15.17.0009
+; Ver #07:eb.8f.fc.f3.ff.37.2d:89
+
+hostname "ATHLETIC-BUILDING"
+module 1 type j9727a
+ip default-gateway 172.16.1.1
+snmp-server community "public" unrestricted
+snmp-server contact "Mark Murray"
+oobm
+   ip address dhcp-bootp
+   exit
+vlan 1
+   name "DEFAULT_VLAN"
+   no untagged 5-20
+   untagged 1-4,21-24,A1-A2,B1-B2
+   ip address 172.16.1.13 255.255.255.0
+   exit
+vlan 20
+   name "IOT"
+   untagged 15-16
+   tagged 1,21-24
+   no ip address
+   exit
+vlan 71
+   name "Mercy-Faculty-Staff"
+   tagged 1-4,21-24
+   no ip address
+   exit
+vlan 72
+   name "Mercy-Student"
+   tagged 1-4,21-24
+   no ip address
+   exit
+vlan 100
+   name "Wired"
+   untagged 5-14,17-20
+   tagged 21-24
+   no ip address
+   exit
+vlan 200
+   name "Cisco Voice"
+   tagged 13-14,21-24
+   no ip address
+   voice
+   exit
+vlan 220
+   name "Public wifi"
+   tagged 1-4,21-24
+   no ip address
+   exit
+spanning-tree
+no tftp server
+no autorun
+no dhcp config-file-update
+no dhcp image-file-update
+password manager

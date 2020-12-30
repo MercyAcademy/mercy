@@ -1,0 +1,43 @@
+CDP neighbors information
+
+ Port  Device ID                     | Platform                     Capability
+ ----- ----------------------------- + ---------------------------- -----------
+ 1     68 3a 1e 85 fe 3c             | Meraki MR52 Cloud Managed AP
+ 1     683a1e85fe3c                  | 1Meraki MR52 Cloud M         R S
+ 2     68 3a 1e 86 12 08             | Meraki MR52 Cloud Managed AP
+ 2     683a1e861208                  | 1Meraki MR52 Cloud M         R S
+ 3     68 3a 1e 85 fc e6             | Meraki MR52 Cloud Managed AP
+ 3     683a1e85fce6                  | 1Meraki MR52 Cloud M         R S
+ 5     68 3a 1e 86 34 1e             | Meraki MR52 Cloud Managed AP
+ 5     683a1e86341e                  | 1Meraki MR52 Cloud M         R S
+ 6     68 3a 1e 86 32 94             | Meraki MR52 Cloud Managed AP
+ 6     683a1e863294                  | 1Meraki MR52 Cloud M         R S
+ 7     68 3a 1e 85 f8 0e             | Meraki MR52 Cloud Managed AP
+ 7     683a1e85f80e                  | 1Meraki MR52 Cloud M         R S
+ 8     68 3a 1e 86 31 24             | Meraki MR52 Cloud Managed AP
+ 8     683a1e863124                  | 1Meraki MR52 Cloud M         R S
+ 9     68 3a 1e 85 fc 70             | Meraki MR52 Cloud Managed AP
+ 9     683a1e85fc70                  | 1Meraki MR52 Cloud M         R S
+ 10    68 3a 1e 86 32 1c             | Meraki MR52 Cloud Managed AP
+ 10    683a1e86321c                  | 1Meraki MR52 Cloud M         R S
+ 29    68 3a 1e 86 35 e8             | Meraki MR52 Cloud Managed AP
+ 29    683a1e8635e8                  | 1Meraki MR52 Cloud M         R S
+ 30    68 3a 1e 86 32 da             | Meraki MR52 Cloud Managed AP
+ 30    683a1e8632da                  | 1Meraki MR52 Cloud M         R S
+ 31    68 3a 1e 86 12 4a             | Meraki MR52 Cloud Managed AP
+ 31    683a1e86124a                  | 1Meraki MR52 Cloud M         R S
+ 32    68 3a 1e 85 f5 b0             | Meraki MR52 Cloud Managed AP
+ 32    683a1e85f5b0                  | 1Meraki MR52 Cloud M         R S
+ 33    68 3a 1e 85 fb f6             | Meraki MR52 Cloud Managed AP
+ 33    683a1e85fbf6                  | 1Meraki MR52 Cloud M         R S
+ 34    68 3a 1e 85 fe 74             | Meraki MR52 Cloud Managed AP
+ 34    683a1e85fe74                  | 1Meraki MR52 Cloud M         R S
+ 35    68 3a 1e 85 f8 a2             | Meraki MR52 Cloud Managed AP
+ 35    683a1e85f8a2                  | 1Meraki MR52 Cloud M         R S
+ 36    68 3a 1e 86 33 02             | Meraki MR52 Cloud Managed AP
+ 36    683a1e863302                  | 1Meraki MR52 Cloud M         R S
+ 37    3c a8 2a 7a 56 51             |
+ 42    68 3a 1e 85 fe b4             | Meraki MR52 Cloud Managed AP
+ 42    683a1e85feb4                  | 1Meraki MR52 Cloud M         R S
+ 47    MERCY-2960-A2                 | Cisco IOS Software, C2960... S
+ 48    MDF3560-1.mercynt.pri         | Cisco IOS Software, Catal... R S

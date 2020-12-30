@@ -1,0 +1,24 @@
+Capability Codes: R - Router, T - Trans Bridge, B - Source Route Bridge
+                  S - Switch, H - Host, I - IGMP, r - Repeater, P - Phone,
+                  D - Remote, C - CVTA, M - Two-port Mac Relay
+
+Device ID        Local Intrfce     Holdtme    Capability  Platform  Port ID
+683a1e863420     Gig 1/0/6         131              R S   Meraki MR Port 0
+683a1e8630ee     Gig 1/0/16        130              R S   Meraki MR Port 0
+683a1e863452     Gig 1/0/11        137              R S   Meraki MR Port 0
+683a1e860274     Gig 1/0/1         178              R S   Meraki MR Port 0
+683a1e863288     Gig 1/0/3         131              R S   Meraki MR Port 0
+683a1e8635dc     Gig 1/0/13        166              R S   Meraki MR Port 0
+683a1e85f78c     Gig 1/0/14        133              R S   Meraki MR Port 0
+MDF3560-1.mercynt.pri
+                 Gig 1/0/23        162             R S I  WS-C3650- Gig 1/0/10
+MDF3560-1.mercynt.pri
+                 Gig 1/0/24        139             R S I  WS-C3650- Gig 1/0/16
+683a1e85f406     Gig 1/0/7         175              R S   Meraki MR Port 0
+683a1e85f6be     Gig 1/0/12        129              R S   Meraki MR Port 0
+683a1e86041a     Gig 1/0/8         154              R S   Meraki MR Port 0
+683a1e85f6cc     Gig 1/0/9         162              R S   Meraki MR Port 0
+683a1e85f7ac     Gig 1/0/2         169              R S   Meraki MR Port 0
+683a1e8632f6     Gig 1/0/10        130              R S   Meraki MR Port 0
+683a1e8631c0     Gig 1/0/4         138              R S   Meraki MR Port 0
+683a1e85f944     Gig 1/0/5         122              R S   Meraki MR Port 0

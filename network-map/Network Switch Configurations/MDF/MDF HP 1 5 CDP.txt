@@ -1,0 +1,9 @@
+CDP neighbors information
+
+ Port  Device ID                     | Platform                     Capability
+ ----- ----------------------------- + ---------------------------- -----------
+ 12    SEP34A84E60C472               | SCCP 9.3.1.3Cisco IP Phon...
+ 12    01 c0 a8 64 15                | Cisco IP Phone 6921, V5, ... S
+ 39    08 f1 ea 7c 5b 94             |
+ 40    28 80 23 f8 15 d0             |
+ 48    MDF3560-1.mercynt.pri         | Cisco IOS Software, Catal... R S
