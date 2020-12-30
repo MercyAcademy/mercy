@@ -1,10 +1,10 @@
 Mercy2960X-1#show running-config
 Building configuration...
 
-Current configuration : 3430 bytes
+Current configuration : 3426 bytes
 !
-! Last configuration change at 10:46:34 EDT Fri Jun 19 2020 by admin
-! NVRAM config last updated at 10:44:58 EDT Wed Jun 17 2020 by admin
+! Last configuration change at 13:25:52 EST Tue Dec 29 2020 by admin
+! NVRAM config last updated at 15:02:02 EST Tue Dec 29 2020 by admin
 !
 version 15.0
 no service pad
@@ -160,14 +160,14 @@ interface TenGigabitEthernet1/0/1
 interface TenGigabitEthernet1/0/2
 !
 interface Vlan1
- ip address 192.168.81.2 255.255.255.0
+ ip address 172.16.1.2 255.255.255.0
 !
 interface Vlan72
  ip address 192.168.32.2 255.255.248.0
  ip helper-address 192.168.101.8
  ip helper-address 192.168.101.6
 !
-ip default-gateway 192.168.81.1
+ip default-gateway 172.16.1.1
 ip http server
 ip http secure-server
 !

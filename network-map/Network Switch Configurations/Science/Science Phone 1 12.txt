@@ -1,9 +1,9 @@
-MERCY-2960-A1#show running-config
+MERCY-2960-A2#show running-config
 Building configuration...
 
-Current configuration : 11249 bytes
+Current configuration : 10205 bytes
 !
-! Last configuration change at 22:15:55 UTC Sun Jan 30 1994 by admin
+! Last configuration change at 05:35:16 UTC Mon Sep 12 1994
 !
 version 12.2
 no service pad
@@ -11,15 +11,15 @@ service timestamps debug datetime msec
 service timestamps log datetime msec
 service password-encryption
 !
-hostname MERCY-2960-A1
+hostname MERCY-2960-A2
 !
 boot-start-marker
 boot-end-marker
 !
-enable secret 5 $1$zvsk$EuKhv06h4ePnLufqxlobE.
+enable secret 5 $1$qAt3$RKYi0WCYW4FOohwVSR/.w.
 !
-username boice privilege 15 password 7 094E1E581A562317181845
-username admin privilege 15 password 7 011126170829265E7006
+username boice privilege 15 password 7 110B495414413F09173E6A
+username admin privilege 15 password 7 121B250441292C557B61
 no aaa new-model
 switch 1 provision ws-c2960s-24ps-l
 !
@@ -70,6 +70,12 @@ vlan 20
 !
 vlan 30
  name Telephones
+!
+vlan 71
+ name ssid-faculty-staff
+!
+vlan 72
+ name ssid-students
 !
 vlan 100
 !
@@ -192,52 +198,16 @@ interface GigabitEthernet1/0/6
  service-policy input AUTOQOS-SRND4-CISCOPHONE-POLICY
 !
 interface GigabitEthernet1/0/7
- switchport access vlan 100
- switchport mode access
- switchport voice vlan 200
- srr-queue bandwidth share 1 30 35 5
- priority-queue out
- mls qos trust device cisco-phone
- mls qos trust dscp
- auto qos voip cisco-phone
- spanning-tree portfast
- service-policy input AUTOQOS-SRND4-CISCOPHONE-POLICY
+ switchport mode trunk
 !
 interface GigabitEthernet1/0/8
- switchport access vlan 100
- switchport mode access
- switchport voice vlan 200
- srr-queue bandwidth share 1 30 35 5
- priority-queue out
- mls qos trust device cisco-phone
- mls qos trust dscp
- auto qos voip cisco-phone
- spanning-tree portfast
- service-policy input AUTOQOS-SRND4-CISCOPHONE-POLICY
+ switchport mode trunk
 !
 interface GigabitEthernet1/0/9
- switchport access vlan 100
- switchport mode access
- switchport voice vlan 200
- srr-queue bandwidth share 1 30 35 5
- priority-queue out
- mls qos trust device cisco-phone
- mls qos trust dscp
- auto qos voip cisco-phone
- spanning-tree portfast
- service-policy input AUTOQOS-SRND4-CISCOPHONE-POLICY
+ switchport mode trunk
 !
 interface GigabitEthernet1/0/10
- switchport access vlan 100
- switchport mode access
- switchport voice vlan 200
- srr-queue bandwidth share 1 30 35 5
- priority-queue out
- mls qos trust device cisco-phone
- mls qos trust dscp
- auto qos voip cisco-phone
- spanning-tree portfast
- service-policy input AUTOQOS-SRND4-CISCOPHONE-POLICY
+ switchport mode trunk
 !
 interface GigabitEthernet1/0/11
  switchport access vlan 100
@@ -411,9 +381,9 @@ interface GigabitEthernet1/0/27
 interface GigabitEthernet1/0/28
 !
 interface Vlan1
- ip address 192.168.81.54 255.255.255.0
+ ip address 172.16.1.12 255.255.255.0
 !
-ip default-gateway 192.168.81.1
+ip default-gateway 172.16.1.1
 no ip http server
 no ip http secure-server
 !
@@ -433,4 +403,4 @@ line vty 5 15
 !
 end
 
-MERCY-2960-A1#
+MERCY-2960-A2#

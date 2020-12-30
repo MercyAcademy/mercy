@@ -1,0 +1,13 @@
+CDP neighbors information
+
+ Port  Device ID                     | Platform                     Capability
+ ----- ----------------------------- + ---------------------------- -----------
+ 1     f8 9e 28 41 95 e2             | Meraki MS120-8LP Cloud Ma... S
+ 1     f89e284195e2                  | 1MS120-8LP                   S
+ 2     68 3a 1e 86 33 a4             | Meraki MR52 Cloud Managed AP
+ 2     683a1e8633a4                  | 1Meraki MR52 Cloud M         R S
+ 3     68 3a 1e 85 fa ac             | Meraki MR52 Cloud Managed AP
+ 3     683a1e85faac                  | 1Meraki MR52 Cloud M         R S
+ 13    SEP54781A6B14B4               | SCCP 9.3.1.3Cisco IP Phon...
+ 13    01 c0 a8 c8 3e                | Cisco IP Phone 6921, V5, ... S
+ 24    MDF3560-1.mercynt.pri         | Cisco IOS Software, Catal... R S

@@ -42,76 +42,76 @@ files = [
     {
         "location" : mdf,
         "type"     : "Cisco",
-        "filename" : os.path.join(dir, mdf, "MDF Core 81 1.txt"),
+        "filename" : os.path.join(dir, mdf, "MDF Core 1 1.txt"),
     },
     {
         "location" : mdf,
         "type"     : "Cisco",
-        "filename" : os.path.join(dir, mdf, "MDF Phone 81 53.txt"),
+        "filename" : os.path.join(dir, mdf, "MDF Phone 1 3.txt"),
     },
     {
         "location" : mdf,
         "type"     : "Cisco",
-        "filename" : os.path.join(dir, mdf, "MDF WAP 81 2.txt"),
+        "filename" : os.path.join(dir, mdf, "MDF WAP 1 2.txt"),
     },
 
     {
         "location" : mdf,
         "type"     : "HP",
-        "filename" : os.path.join(dir, mdf, "MDF HP 81 50.txt"),
+        "filename" : os.path.join(dir, mdf, "MDF HP 1 4.txt"),
     },
     {
         "location" : mdf,
         "type"     : "HP",
-        "filename" : os.path.join(dir, mdf, "MDF HP 81 62.txt"),
+        "filename" : os.path.join(dir, mdf, "MDF HP 1 5.txt"),
     },
     {
         "location" : mdf,
         "type"     : "HP",
-        "filename" : os.path.join(dir, mdf, "MDF HP 81 64.txt"),
+        "filename" : os.path.join(dir, mdf, "MDF HP 1 6.txt"),
     },
 
     # Business
     {
         "location" : bus,
         "type"     : "HP",
-        "filename" : os.path.join(dir, bus, "Business Aruba 81 67.txt"),
+        "filename" : os.path.join(dir, bus, "Business Aruba 1 9.txt"),
     },
     {
         "location" : bus,
         "type"     : "Cisco",
-        "filename" : os.path.join(dir, bus, "Business Phone 81 54.txt"),
+        "filename" : os.path.join(dir, bus, "Business Phone 1 10.txt"),
     },
 
     # Concession
     {
         "location" : con,
         "type"     : "HP",
-        "filename" : os.path.join(dir, con, "Concession Aruba 81 69.txt"),
+        "filename" : os.path.join(dir, con, "Concession Aruba 1 7.txt"),
     },
     {
         "location" : con,
         "type"     : "Cisco",
-        "filename" : os.path.join(dir, con, "Concession Phone 81 56.txt"),
+        "filename" : os.path.join(dir, con, "Concession Phone 1 8.txt"),
     },
 
     # Science
     {
         "location" : sci,
         "type"     : "HP",
-        "filename" : os.path.join(dir, sci, "Science HP 81 51.txt"),
+        "filename" : os.path.join(dir, sci, "Science HP 1 11.txt"),
     },
     {
         "location" : sci,
         "type"     : "Cisco",
-        "filename" : os.path.join(dir, sci, "Science Phone 81 55.txt"),
+        "filename" : os.path.join(dir, sci, "Science Phone 1 12.txt"),
     },
 
     # Athletics
     {
         "location" : ath,
         "type"     : "HP",
-        "filename" : os.path.join(dir, ath, "Athletics-81-58.txt"),
+        "filename" : os.path.join(dir, ath, "Athletics-1-13.txt"),
     },
 ]
 
@@ -751,7 +751,7 @@ def render_neighbors(graph, switches, neighbors):
             entry['rendered'] = True
 
 def render(switches, aps, neighbors):
-    name  = "mercy"
+    name  = "mercy.dot"
     graph = graphviz.Graph(name=name, engine="fdp")
 
     graph.attr("graph", overlap="False")

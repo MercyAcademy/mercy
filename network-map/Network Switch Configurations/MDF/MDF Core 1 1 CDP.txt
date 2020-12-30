@@ -1,0 +1,16 @@
+Capability Codes: R - Router, T - Trans Bridge, B - Source Route Bridge
+                  S - Switch, H - Host, I - IGMP, r - Repeater, P - Phone,
+                  D - Remote, C - CVTA, M - Two-port Mac Relay
+
+Device ID        Local Intrfce     Holdtme    Capability  Platform  Port ID
+MERCY-2960-MDF   Gig 1/0/11        178              S I   WS-C2960S Gig 1/0/48
+MERCY-2960-MDF   Gig 1/0/12        178              S I   WS-C2960S Gig 1/0/47
+Mercy2960X-1     Gig 1/0/16        156              S I   WS-C2960X Gig 1/0/24
+Mercy2960X-1     Gig 1/0/10        156              S I   WS-C2960X Gig 1/0/23
+MERCY-UCN1.mercynt.pri
+                 Gig 1/0/8         127               H    VMware    eth0
+MERCY-CUCM1.mercynt.pri
+                 Gig 1/0/8         168               H    VMware    eth0
+MERCY-2901-VG    Gig 1/0/6         152             R S I  CISCO2901 Gig 0/0
+
+Total cdp entries displayed : 7

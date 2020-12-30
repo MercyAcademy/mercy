@@ -1,9 +1,9 @@
 MERCY-2960-B1#show running-config
 Building configuration...
 
-Current configuration : 11248 bytes
+Current configuration : 11235 bytes
 !
-! Last configuration change at 19:02:30 UTC Mon Oct 3 1994 by admin
+! Last configuration change at 00:22:04 UTC Sat Apr 15 1995
 !
 version 12.2
 no service pad
@@ -411,9 +411,9 @@ interface GigabitEthernet1/0/27
 interface GigabitEthernet1/0/28
 !
 interface Vlan1
- ip address 192.168.81.56 255.255.255.0
+ ip address 172.16.1.8 255.255.255.0
 !
-ip default-gateway 192.168.81.1
+ip default-gateway 172.16.1.1
 no ip http server
 no ip http secure-server
 !

@@ -1,10 +1,10 @@
 MDF3560-1#show running-config
 Building configuration...
 
-Current configuration : 18962 bytes
+Current configuration : 18841 bytes
 !
-! Last configuration change at 14:26:42 EDT Fri Jul 31 2020 by admin
-! NVRAM config last updated at 14:26:51 EDT Fri Jul 31 2020 by admin
+! Last configuration change at 16:19:35 EST Tue Dec 29 2020 by admin
+! NVRAM config last updated at 16:27:42 EST Tue Dec 29 2020 by admin
 !
 version 15.2
 no service pad
@@ -219,7 +219,6 @@ interface GigabitEthernet1/0/8
  spanning-tree portfast
 !
 interface GigabitEthernet1/0/9
- switchport access vlan 100
  switchport mode access
  switchport nonegotiate
  spanning-tree portfast
@@ -344,7 +343,7 @@ interface GigabitEthernet1/1/4
  spanning-tree portfast
 !
 interface Vlan1
- ip address 192.168.81.1 255.255.255.0
+ ip address 172.16.1.1 255.255.255.0
  ip helper-address 192.168.101.6
  ip helper-address 192.168.101.8
  ip helper-address 172.16.10.2
@@ -479,6 +478,8 @@ access-list 2001 permit ip any any
 access-list 2001 remark Private IT: inband + internet
 access-list 2020 permit ip 172.16.20.0 0.0.0.255 host 192.168.101.6
 access-list 2020 permit ip 172.16.20.0 0.0.0.255 host 192.168.101.8
+access-list 2020 permit ip 172.16.20.248 0.0.0.7 192.168.100.0 0.0.1.255
+access-list 2020 permit ip 172.16.20.248 0.0.0.7 192.168.64.0 0.0.7.255
 access-list 2020 permit ip 172.16.20.0 0.0.0.255 host 172.16.10.2
 access-list 2020 permit ip 172.16.20.0 0.0.0.255 host 172.16.10.3
 access-list 2020 deny   ip 172.16.20.0 0.0.0.255 10.0.0.0 0.255.255.255
@@ -494,25 +495,19 @@ access-list 2030 deny   ip 172.16.30.0 0.0.0.255 192.168.0.0 0.0.255.255
 access-list 2030 deny   ip 172.16.30.0 0.0.0.255 172.16.0.0 0.0.255.255
 access-list 2030 permit ip any any
 access-list 2030 remark Telephones: internet only
+access-list 2071 remark Faculty wifi (old): deny private IT
 access-list 2071 permit ip 192.168.71.0 0.0.0.3 10.0.0.0 0.255.255.255
 access-list 2071 permit ip 192.168.71.0 0.0.0.3 192.168.0.0 0.0.255.255
 access-list 2071 permit ip 192.168.71.0 0.0.0.3 172.16.0.0 0.0.255.255
+access-list 2071 permit ip 192.168.71.0 0.0.0.255 172.16.20.248 0.0.0.7
 access-list 2071 deny   ip any 192.168.81.0 0.0.0.255
 access-list 2071 deny   ip any 172.16.1.0 0.0.0.255
 access-list 2071 permit ip any any
-access-list 2071 remark Faculty wifi: deny private IT
-access-list 2071 remark Faculty wifi
-access-list 2071 remark Faculty wifi (old)
-access-list 2071 remark Faculty wifi (old): deny private IT
-access-list 2072 remark Students wifi: deny private IT
 access-list 2072 deny   ip any 192.168.81.0 0.0.0.255
 access-list 2072 deny   ip any 172.16.1.0 0.0.0.255
 access-list 2072 permit ip any any
-access-list 2072 remark Students wifi (old): deny private IT
-access-list 2072 remark Faculty wired (old)
-access-list 2100 permit ip host 192.168.101.121 10.0.0.0 0.255.255.255
-access-list 2100 permit ip host 192.168.101.121 192.168.0.0 0.0.255.255
-access-list 2100 permit ip host 192.168.101.121 172.16.0.0 0.0.255.255
+access-list 2072 remark Students wifi: deny private IT
+access-list 2100 permit ip 192.168.100.0 0.0.1.255 172.16.20.248 0.0.0.7
 access-list 2100 permit ip any any
 access-list 2110 permit ip 172.16.110.0 0.0.1.255 host 192.168.101.6
 access-list 2110 permit ip 172.16.110.0 0.0.1.255 host 192.168.101.8
@@ -520,11 +515,12 @@ access-list 2110 permit ip 172.16.110.0 0.0.1.255 host 172.16.10.2
 access-list 2110 permit ip 172.16.110.0 0.0.1.255 host 172.16.10.3
 access-list 2110 permit ip 172.16.110.0 0.0.1.255 172.16.140.0 0.0.0.255
 access-list 2110 permit ip 172.16.110.0 0.0.1.255 172.16.110.0 0.0.1.255
+access-list 2110 remark Faculty: Shared devices + internet
+access-list 2110 permit ip 172.16.110.0 0.0.1.255 172.16.20.248 0.0.0.7
 access-list 2110 deny   ip 172.16.110.0 0.0.1.255 10.0.0.0 0.255.255.255
 access-list 2110 deny   ip 172.16.110.0 0.0.1.255 192.168.0.0 0.0.255.255
 access-list 2110 deny   ip 172.16.110.0 0.0.1.255 172.16.0.0 0.0.255.255
 access-list 2110 permit ip any any
-access-list 2110 remark Faculty: Shared devices + internet
 access-list 2120 permit ip 172.16.120.0 0.0.7.255 host 192.168.101.6
 access-list 2120 permit ip 172.16.120.0 0.0.7.255 host 192.168.101.8
 access-list 2120 permit ip 172.16.120.0 0.0.7.255 host 172.16.10.2

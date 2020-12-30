@@ -3,50 +3,28 @@ Running configuration:
 ; J9729A Configuration Editor; Created on release #WB.15.12.0015
 ; Ver #05:18.41.ff.35.0d:9b
 
-hostname "Office2920-2"
+hostname "Office2920-1"
 module 1 type j9729a
 qos type-of-service diff-services
-ip default-gateway 192.168.81.1
+ip default-gateway 172.16.1.1
 snmp-server community "public" unrestricted
 oobm
    ip address dhcp-bootp
    exit
 vlan 1
    name "DEFAULT_VLAN"
-   no untagged 1-41
-   untagged 42-48,A1-A2,B1-B2
-   ip address 192.168.81.62 255.255.255.0
-   exit
-vlan 20
-   name "Private IOT"
-   untagged 27
-   tagged 47-48
-   no ip address
-   exit
-vlan 70
-   name "Guest WIFI"
-   tagged 48
-   no ip address
-   exit
-vlan 71
-   name "Mercy WIFI"
-   tagged 48
-   no ip address
-   exit
-vlan 72
-   name "Student WIFI"
-   tagged 48
-   no ip address
+   no untagged 1-40
+   untagged 41-48,A1-A2,B1-B2
+   ip address 172.16.1.4 255.255.255.0
    exit
 vlan 100
    name "Wired"
-   untagged 1-26,28-40
+   untagged 1-40
    tagged 47-48
    no ip address
    exit
 vlan 200
    name "CiscoVoice"
-   untagged 41
    tagged 47-48
    no ip address
    exit
@@ -55,5 +33,3 @@ no autorun
 no dhcp config-file-update
 no dhcp image-file-update
 password manager
-
-Office2920-2#
