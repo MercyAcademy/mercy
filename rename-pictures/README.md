@@ -9,7 +9,7 @@ Instructions to run the script are below.
 
 ## One time setup:
 
-1. Save this Python script into a text file on your desktop named `rename-pictures.py` (do not use Word, for example -- you must use a text editor, like the TextEdit app).
+1. Save this Python script into a text file on your desktop named `rename-pictures.py` (do not use Word, for example -- you must use a text editor, like the TextEdit app.  Or you can download the text file from https://raw.githubusercontent.com/MercyAcademy/mercy/master/rename-pictures/rename-pictures.py).
 1. Open the Terminal app.
 1. At the Terminal prompt, run this command:
    ```
