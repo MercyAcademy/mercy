@@ -9,10 +9,12 @@ while /usr/bin/true; do
     filename="ping-$d.log"
     mkdir -p $dir
     echo "=== DATE: `date`"
-    ping -c 50 172.16.20.249 2>&1 | tee $dir/$filename
+    ip addr
+    echo "==="
+    ping -c 5 172.16.20.249 2>&1 | tee $dir/$filename
 
     set +e
-    ssh jeff@squyres.com mkdir -p mercy/logs/$dir
-    scp $dir/$filename jeff@squyres.com:mercy/logs/$dir
+    ssh mercy@mercy.squyres.com mkdir -p mercy/logs/$dir
+    scp $dir/$filename mercy@mercy.squyres.com:mercy/logs/$dir
     set -e
 done
