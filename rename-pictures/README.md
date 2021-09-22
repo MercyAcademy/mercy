@@ -30,7 +30,7 @@ Instructions to run the script are below.
 2. Select "New Terminal at folder".  This will open a new Terminal window.
 3. At the Terminal prompt, run this command:
    ```
-   $HOME/Desktop/rename.py FILENAME.CSV
+   $HOME/Desktop/rename-pictures.py FILENAME.CSV
    ```
    where you substitute in your CSV's filename (including the `.csv` suffix) for `FILENAME.CSV`.
 4. You should see output in the Terminal showing that each of the files were renamed, or errors for files that were not renamed.  You should also see that all the files were renamed in Finder.
