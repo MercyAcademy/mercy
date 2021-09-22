@@ -50,6 +50,7 @@ Instructions to run the script are below.
 1. The first time you run this, MacOS will popup a dialog box saying
    that you need to install the developer command line tools.  Go
    ahead and install them.
+   * *It may take several minutes to install the developer tools.*
    * You'll also see an error message about how `rename-pictures.py`
      failed.  **This is ok.**
    * Once MacOS finishes installing the developer tools, run the
