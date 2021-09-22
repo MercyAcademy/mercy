@@ -14,7 +14,7 @@ Instructions to run the script are below.
    a text editor, like the TextEdit app.  Or you can download the text
    file from
    https://raw.githubusercontent.com/MercyAcademy/mercy/master/rename-pictures/rename-pictures.py).
-   * The easiest method is to select File-->Save As in your web
+   * The easiest method is to select File-->Save Page As in your web
      browser to save the file as `rename-pictures.py` on your Desktop.
 1. Open the Terminal app.
 1. At the Terminal prompt, run this command:
