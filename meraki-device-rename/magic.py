@@ -102,7 +102,6 @@ for device in devices:
     }
 
     print(f"- Setting name for MAC {client_data['mac']}: {client_data['name']}")
-    continue
     response = dashboard.networks.provisionNetworkClients(
         meraki_network['id'], [ client_data ],
         meraki_policy_name)
