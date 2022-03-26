@@ -1,0 +1,47 @@
+ACTION,NAME,URL PATTERN
+Deny,,69.63.178.11
+Deny,,63.135.80.47
+Deny,,216.178.38.129
+Deny,,216.178.39.11
+Deny,,216.178.39.12
+Deny,,63.135.80.45
+Deny,,63.135.80.46
+Deny,,184.73.250.47
+Deny,www.formspring.me,184.73.222.177
+Deny,www.formspring.com,64.225.158.173
+Allow,Default exception for WebBlocker server database,download.websense.com
+Allow,Default exception for WatchGuard Cloud (WGC) IoT endpoints,aidd27s0p51l6-ats.iot.ap-northeast-1.amazonaws.com
+Allow,Default exception for WatchGuard Cloud (WGC) IoT endpoints,aidd27s0p51l6-ats.iot.eu-central-1.amazonaws.com
+Allow,Default exception for WatchGuard Cloud (WGC) IoT endpoints,aidd27s0p51l6-ats.iot.us-west-2.amazonaws.com
+Allow,Default exception for WatchGuard Services,*.dnswatch.watchguard.com
+Allow,Default exception for WatchGuard Services,*.strongarm.io
+Allow,DNS Service,54.174.40.213
+Allow,DNS Service,52.3.100.184
+Allow,DNS Service,54.199.61.196
+Allow,DNS Service,176.34.8.52
+Allow,DNS Service,34.240.115.208
+Allow,DNS Service,34.251.171.117
+Allow,DNS Service,13.237.104.38
+Allow,DNS Service,13.237.109.176
+Allow,DNS Service,52.215.192.68
+Allow,DNS Service,52.215.192.69
+Allow,Black Hole,54.173.101.99
+Allow,Default exception for Panda products and services,*.pandasecurity.com
+Allow,Default exception for Panda products and services,aether100proservicebus.servicebus.windows.net
+Allow,Default exception for Panda products and services,aether100pronotification.table.core.windows.net
+Allow,Default exception for Panda products and services,content.ivanti.com
+Allow,Default exception for Panda products and services,*.globalsign.net
+Allow,Default exception for Panda products and services,*.globalsign.com
+Allow,Default exception for Panda products and services,*.digicert.com
+Allow,Default exception for Panda products and services,*.ctmail.com
+Allow,Meraki Cloud,209.206.51.0/24
+Allow,Meraki Cloud,209.206.50.0/24
+Allow,Meraki Cloud,209.206.52.0/24
+Allow,Meraki Cloud,209.206.53.0/24
+Allow,Meraki Cloud,209.206.63.0/24
+Allow,JAMF - Load balancing requests to APNs servers come from these IP addresses.,17.0.0.0/8
+Allow,JAMF -Emails from Jamf School come from this IP address.,143.55.224.122
+Allow,"JAMF - (U.S. regions, LDAP only) Authentication requests to your LDAP server may come from these IP addresses.",18.211.254.129
+Allow,"JAMF - (U.S. regions, LDAP only) Authentication requests to your LDAP server may come from these IP addresses.",52.7.228.194
+Allow,"JAMF - (U.S. regions, LDAP only) Authentication requests to your LDAP server may come from these IP addresses.",35.172.167.222
+Allow,"JAMF - (U.S. regions, LDAP only) Authentication requests to your LDAP server may come from these IP addresses.",34.227.122.7
