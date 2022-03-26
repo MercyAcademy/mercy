@@ -24,6 +24,9 @@ with open(blockedUrlFile, newline='') as csvFile:
 for site in cleanedLinks:
     url = f"https://{site['URL PATTERN']}"
     name = site["NAME"]
+    # If there's no name, use the URL instead so we have *something*
+    if name == "":
+        name = site["URL PATTERN"]
     denied = False
     if site["ACTION"] == "Deny":
         denied = True
