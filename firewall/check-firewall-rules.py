@@ -1,10 +1,17 @@
+#!/usr/bin/env python3
 import csv
 import requests
+import sys
 
 cleanedLinks = list()
 
-# Import the CSV into a list of URLs
-blockedUrlFile = "blocked.csv"
+# Import the CSV into a list of URLs, use the first command line argument as the
+# filename
+try:
+    blockedUrlFile = sys.argv[1]
+except IndexError:
+    print("Pass the CSV as a command line argument")
+    exit()
 with open(blockedUrlFile, newline='') as csvFile:
     urlReader = csv.DictReader(csvFile)
     # Go through the list and and remove any regex
