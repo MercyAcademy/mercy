@@ -32,7 +32,10 @@ def read_jamf_export_file(filename, sep):
             # be the same.
             if 'WiFiMAC' in device:
                 device['Mercy:Wifi MAC'] = device['WiFiMAC']
+                device['Mercy:Eth MAC'] = device['EthernetMAC']
             elif 'Wi-Fi MAC Address' in device:
+                # 2022 Aug: we no longer have JAMF School, so I don't
+                # know/care what the ethernet column is.
                 device['Mercy:Wifi MAC'] = device['Wi-Fi MAC Address']
 
             if 'Name' in device:
@@ -101,9 +104,24 @@ for device in devices:
         'name' : name,
     }
 
-    print(f"- Setting name for MAC {client_data['mac']}: {client_data['name']}")
-    response = dashboard.networks.provisionNetworkClients(
+    print(f"- Setting name for wifi MAC {client_data['mac']}: {client_data['name']}")
+    response = meraki_dashboard.networks.provisionNetworkClients(
         meraki_network['id'], [ client_data ],
         meraki_policy_name)
+
+    # If we have an Ethernet MAC, set that one, too.
+    key = 'Mercy:Eth MAC'
+    if key in device:
+        eth_mac = device[key]
+        if eth_mac != None and eth_mac != '':
+            client_data = {
+                'mac' : device[key],
+                'name' : name,
+            }
+
+            print(f"- Setting name for eth MAC {client_data['mac']}: {client_data['name']}")
+            response = meraki_dashboard.networks.provisionNetworkClients(
+                meraki_network['id'], [ client_data ],
+                meraki_policy_name)
 
 print("All done!")
