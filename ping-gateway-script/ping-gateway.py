@@ -68,7 +68,7 @@ outfile = f'ping-data-starting-{now}.json'
 # Run forever; make sure to tidy up the JSON output file when done.
 with JsonFile(outfile) as json_fp:
     while True:
-        start = datetime.datetime.now(datetime.UTC)
+        start = datetime.datetime.now(datetime.timezone.utc)
         print(f"=== {start}")
 
         dhcp_data = list()
@@ -93,15 +93,15 @@ with JsonFile(outfile) as json_fp:
             # directly.
             the_data = lease_data['plist']['dict']
 
-            lease_start_str = the_data['date']
+            lease_start_str = the_data['date'].replace('Z', '+00:00')
             lease_start = datetime.datetime.fromisoformat(lease_start_str)
 
             lease_len_seconds = int(the_data['integer'])
             lease_len_delta = datetime.timedelta(seconds=lease_len_seconds)
 
             lease_end = lease_start + lease_len_delta
-            now = datetime.datetime.now(datetime.UTC)
-            lease_time_left = lease_end - datetime.datetime.now(datetime.UTC)
+            now = datetime.datetime.now(datetime.timezone.utc)
+            lease_time_left = lease_end - datetime.datetime.now(datetime.timezone.utc)
 
             # Get our IP address. There are multiple strings in the
             # orignal XML data, so we have to look through the list of
@@ -147,7 +147,7 @@ with JsonFile(outfile) as json_fp:
             happy = False
 
         # Record the end time
-        end = datetime.datetime.now(datetime.UTC)
+        end = datetime.datetime.now(datetime.timezone.utc)
 
         data = {
             'start' : str(start),
