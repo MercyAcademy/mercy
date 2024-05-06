@@ -59,13 +59,13 @@ def get_user(dashboard, network_id, email):
         if user['email'] == email:
             return user
 
-    print(f"Could not find user {name}")
+    print(f"Could not find user {email}")
     exit(1)
 
 ########################################################################
 
 def setup_cli():
-    parser = argparse.ArgumentParser(description='Renew Meraki 802.11x user for 24 hours')
+    parser = argparse.ArgumentParser(description='Renew Meraki 802.11x user for 7 days')
     parser.add_argument('--api-key',
                         required=True,
                         help='Meraki API key')
@@ -76,16 +76,16 @@ def setup_cli():
                         default='Mercy',
                         help='Meraki network name')
     parser.add_argument('--ssid',
-                        default='Mercy Authorized',
+                        default='Mercy Guest',
                         help='Meraki SSID')
     parser.add_argument('--email',
-                        default='guest@mercyjaguars.com',
+                        default='mercyguest@mercyjaguars.com',
                         help='Email address of Meraki 802.11x/wifi user')
     parser.add_argument('--pw-length',
                         default=12,
                         help='Length of password to generate')
 
-    expires = datetime.datetime.now() + datetime.timedelta(hours=23, minutes=59)
+    expires = datetime.datetime.now() + datetime.timedelta(hours=7*24)
     parser.add_argument('--expires',
                         default=expires.isoformat(),
                         help='Expiration of renewal')
