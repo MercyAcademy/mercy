@@ -9,6 +9,9 @@ import secrets
 import argparse
 import datetime
 
+# See https://github.com/redacted/XKCD-password-generator
+from xkcdpass import xkcd_password as xp
+
 #----------------------------------------------------------------------
 
 def get_org(dashboard, name):
@@ -16,7 +19,6 @@ def get_org(dashboard, name):
 
     organizations = dashboard.organizations.getOrganizations()
     for org in organizations:
-        print(f"Found org: {org['name']}")
         if org['name'] == name:
             return org
 
@@ -81,9 +83,6 @@ def setup_cli():
     parser.add_argument('--email',
                         default='mercyguest@mercyjaguars.com',
                         help='Email address of Meraki 802.11x/wifi user')
-    parser.add_argument('--pw-length',
-                        default=12,
-                        help='Length of password to generate')
 
     expires = datetime.datetime.now() + datetime.timedelta(hours=7*24)
     parser.add_argument('--expires',
@@ -104,7 +103,13 @@ def reset_user(dashboard, network_id, ssid_number, user_id, args):
     ]
 
     sources = string.ascii_letters + string.digits + string.punctuation
-    password = ''.join([ secrets.choice(sources) for x in range(args.pw_length) ])
+
+    # create a wordlist from the default wordfile
+    # use words between 5 and 8 letters long
+    wordfile = xp.locate_wordfile()
+    mywords = xp.generate_wordlist(wordfile=wordfile, min_length=5, max_length=6)
+    password = xp.generate_xkcdpassword(mywords, acrostic="mercy")
+    password = password.title().replace(' ', '')
 
     dashboard.networks.updateNetworkMerakiAuthUser(network_id,
                                                    user_id,
