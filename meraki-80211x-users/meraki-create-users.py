@@ -59,7 +59,7 @@ def create_users(dashboard, network_id, ssid_number, args):
     authorizations = [
         {
             'ssidNumber' : ssid_number,
-            'expiresAt' : args.expires,
+            'expiresAt' : 'Never',
         },
     ]
 
@@ -127,7 +127,7 @@ def setup_cli():
                         default='Mercy',
                         help='Meraki network name')
     parser.add_argument('--ssid',
-                        default='Mercy Authorized',
+                        default='Mercy Guest',
                         help='Meraki SSID')
     parser.add_argument('--file',
                         required=True,
