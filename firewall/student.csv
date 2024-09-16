@@ -1,0 +1,79 @@
+ACTION,NAME,MATCHING TYPE,URL PATTERN
+Allow,*.aviary.com/*,Pattern,*.aviary.com/*
+Allow,*.ccsct.com/*,Pattern,*.ccsct.com/*
+Allow,*.saintx.com/*,Pattern,*.saintx.com/*
+Allow,*.watchguard.com/*,Pattern,*.watchguard.com/*
+Allow,192.168.100.37:5353/*,Pattern,192.168.100.37:5353/*
+Allow,Accelerate-ed1,Pattern,*.vzaar.com/*
+Allow,Accelerate-ed2,Pattern,d2vejgww55otry.cloudfront.net/*
+Allow,Accelerate-ed3,Pattern,cdn.middil.com/*
+Allow,akamai.net/*,Pattern,akamai.net/*
+Allow,akamaihd,Pattern,*.akamaihd.net/*
+Allow,AP Chem 1,Pattern,vimeo.com/*
+Allow,AP Chem 2,Pattern,*.vimeo.com/*
+Allow,AppleID,Pattern,*.*apple.com/*
+Allow,Aviation Video,Pattern,video.link/w/k8Xd*
+Allow,BNC Textbooks - IP 1,Pattern,136.147.142.169/*
+Allow,BNC Textbooks - IP 2,Pattern,136.147.142.170/*
+Allow,BNC Textbooks - URL 1,Pattern,news.bncservices.com/*
+Allow,BNC Textbooks - URL 2,Pattern,bounce.news.bncservices.com/*
+Allow,BNC Textbooks - URL1,Pattern,news.bncservices.com/*
+Allow,DailyMotion,Pattern,*.dailymotion.com/*
+Allow,DailyMotionCDN,Pattern,*.dmcdn.net/*
+Allow,edgesuite.net/*,Pattern,edgesuite.net/*
+Allow,freelogodesign1,Pattern,cdn.jsdelivr.net/*
+Allow,freelogodesign2,Pattern,*.cloudfront.net/*
+Allow,freelogodesign3,Pattern,sni.cloudflaressl.com/*
+Allow,gapminder,Pattern,*.dollarstreet.org/*
+Allow,google slides content,Pattern,*.googleusercontent.com/*
+Allow,JAMF,Pattern,*.jamfcloud.com
+Allow,JAMF - Ensures scripting works properly.,Pattern,mercyacademyky.jamfcloud.com/api
+Allow,JAMF - Google LDAP,Pattern,mercyacademyky.jamfcloud.com/enroll/oauth
+Allow,JAMF - Google LDAP 1,Pattern,mercyacademyky.jamfcloud.com/onboarding/oauth
+Allow,JAMF - Microsoft Azure,Pattern,mercyacademyky.jamfcloud.com/enroll/oauth
+Allow,JAMF - Microsoft Azure 1,Pattern,mercyacademyky.jamfcloud.com/onboarding/oauth
+Allow,JAMF - Microsoft Azure 2,Pattern,mercyacademyky.jamfcloud.com/link
+Allow,JusticeNetwork,Pattern,justice-network.org/*
+Allow,listsrv.surfcontrol.com/*,Pattern,listsrv.surfcontrol.com/*
+Allow,Mercy Academy,Pattern,bnck-12.com/*
+Allow,Mercy Bookstore,Pattern,bnck-12.com/*
+Allow,Pandora1,Pattern,*.pandora.com/*
+Allow,Pandora2,Pattern,*.*cdn.com/*
+Allow,PBSPhysics,Pattern,vjs.zencdn.net/*
+Allow,PBSVideo,Pattern,*.video.cdn.pbs.org/*
+Allow,Pearsonrealize,Pattern,*.cloudflare.com/*
+Allow,pinterest,Pattern,*.pinterest.com/*
+Allow,PinterestIMG,Pattern,*.pinimg.com/*
+Allow,playbuzz,Pattern,*.playbuzz.com/*
+Allow,powtoon,Pattern,powtoon*/*
+Allow,schoologydev,Pattern,*.schoologydev.com/*
+Allow,skimble,Pattern,*.skimble.com/*
+Allow,slideshare,Pattern,slideshare.net/*
+Allow,soundcloud,Pattern,soundcloud.com/*
+Allow,soundcloud2019,Pattern,*.soundcloud.com/*
+Allow,spotify,Pattern,*.spotify.com/*
+Allow,Spotify1,Pattern,*.scdn.co/*
+Allow,Spotify2,Pattern,*.pscdn.co/*
+Allow,timemaps,Pattern,*.stackpathdns.com/*
+Allow,Verifone,Pattern,*.globalpay.com:443/*
+Allow,Walk,Pattern,*.cdn.everydayhero.com/*
+Allow,WNYC,Pattern,*.wnyc.org/*
+Allow,xplane,Pattern,cds.*.hwcdn.net/*
+Deny,*.facebook.com/*,Pattern,*.facebook.com/*
+Deny,Amazon,Pattern,*.amazon.com/*
+Deny,Amy Wheatley,Pattern,www.robertkaplinsky.com/*
+Deny,Apple TV App,Pattern,*.tv.apple.com/*
+Deny,betternet,Pattern,betternet-backend.herokuapp.com/*
+Deny,block ios 1,Pattern,mesu.apple.com/*
+Deny,block ios 2,Pattern,appldnld.apple.com/*
+Deny,Disneyplus,Pattern,*.media.dssott.com/*
+Deny,imessage,Pattern,*.ess.apple.com/*
+Deny,Instagram,Pattern,www.instagram.com/*
+Deny,kaplinsky,Pattern,robertkaplinsky.com/*
+Deny,likeinstagram,Pattern,*.vsco.co/*
+Deny,likeinstagram,Pattern,*.vsco.co/*
+Deny,lipsi,Pattern,*.lipsiapp.com/*
+Deny,Omegle,Pattern,*.omegle.com/*
+Deny,slader,Pattern,*.slader.com/*
+Deny,tumblr,Pattern,*.tumblr.com/*
+Deny,wattpad1,Pattern,*.wattpad.com/*
