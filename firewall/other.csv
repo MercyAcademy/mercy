@@ -1,0 +1,18 @@
+ACTION,NAME,MATCHING TYPE,URL PATTERN
+Allow,*.aviary.com/*,Pattern,*.aviary.com/*
+Allow,*.ccsct.com/*,Pattern,*.ccsct.com/*
+Allow,*.saintx.com/*,Pattern,*.saintx.com/*
+Allow,*.watchguard.com/*,Pattern,*.watchguard.com/*
+Allow,192.168.100.37:5353/*,Pattern,192.168.100.37:5353/*
+Allow,akamai.net/*,Pattern,akamai.net/*
+Allow,akamaihd,Pattern,*.akamaihd.net/*
+Allow,Connectory,Pattern,*.connectory.org/*
+Allow,edgesuite.net/*,Pattern,edgesuite.net/*
+Allow,eleot,Pattern,*.advanc-ed.org/*
+Allow,listsrv.surfcontrol.com/*,Pattern,listsrv.surfcontrol.com/*
+Allow,Verifone,Pattern,*.globalpay.com:443/*
+Allow,Verifone,Pattern,igusproda.globalpay.com/*
+Allow,WB Rule 1,Pattern,*.yahoo.com/*
+Deny,*.facebook.com/*,Pattern,*.facebook.com/*
+Deny,block ios 1,Pattern,mesu.apple.com/*
+Deny,block ios 2,Pattern,appldnld.apple.com/*
