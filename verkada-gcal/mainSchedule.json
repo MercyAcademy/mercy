@@ -1,0 +1,69 @@
+{
+    "doors": [
+      {
+        "id": 1,
+        "name": "Small Gym Doors",
+        "schedule": [
+          {
+            "status": "access_control",
+            "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            "start_time": "00:00",
+            "end_time": "23:59",
+            "time_zone": "America/New_York"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Red Doors",
+        "schedule": [
+          {
+            "status": "access_control",
+            "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            "start_time": "00:00",
+            "end_time": "23:59",
+            "time_zone": "America/New_York"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Atrium Door",
+        "schedule": [
+          {
+            "status": "access_control",
+            "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            "start_time": "00:00",
+            "end_time": "23:59",
+            "time_zone": "America/New_York"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "Cafeteria Doors",
+        "schedule": [
+          {
+            "status": "access_control",
+            "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            "start_time": "00:00",
+            "end_time": "23:59",
+            "time_zone": "America/New_York"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "Main Entrance Doors",
+        "schedule": [
+          {
+            "status": "access_control",
+            "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            "start_time": "00:00",
+            "end_time": "23:59",
+            "time_zone": "America/New_York"
+          }
+        ]
+      }
+    ]
+  }
