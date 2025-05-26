@@ -5,7 +5,7 @@ on:
         # GitHub Action schedules are specified in GMT;
         # hours 11-22 correspond to 6am-4pm US Eastern time
         # (for half the year)
-        cron: '0,15,30,45 11-22 * * 1-5'
+        - cron: '0,15,30,45 11-22 * * 1-5'
 
 permissions:
   contents: read
