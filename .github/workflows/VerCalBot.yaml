@@ -1,11 +1,14 @@
 name: Synchronize Verkada door exception calendars to a target Google Calendar
 
 on:
-    schedule:
-        # GitHub Action schedules are specified in GMT;
-        # hours 11-22 correspond to 6am-4pm US Eastern time
-        # (for half the year)
-        - cron: '0,15,30,45 11-22 * * 1-5'
+  # Allow us to trigger this workflow manually, if desired
+  workflow_dispatch:
+
+  schedule:
+    # GitHub Action schedules are specified in GMT;
+    # hours 11-22 correspond to 6am-4pm US Eastern time
+    # (for half the year)
+    - cron: '0,15,30,45 11-22 * * 1-5'
 
 permissions:
   contents: read
