@@ -1,0 +1,43 @@
+name: Synchronize Verkada door exception calendars to a target Google Calendar
+
+on:
+    schedule:
+        # GitHub Action schedules are specified in GMT;
+        # hours 11-22 correspond to 6am-4pm US Eastern time
+        # (for half the year)
+        cron: '0,15,30,45 11-22 * * 1-5'
+
+permissions:
+  contents: read
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+
+      - name: Checkout the VerCalBot repo
+        run: git clone https://github.com/VerCalBot/VerCalBot.git upstream-VerCalBot
+
+      - name: Install dependencies
+        run: pip install -r upstream-VerCalBot/src/requirements.txt
+
+      - name: Write file from secrets
+        run: echo "${{ secrets.GOOGLE_CLOUD_CRED_JSON_BASE64 }}" | base64 -d > google-creds.json
+
+      - name: Run the synchronization
+        env:
+          VERKADA_API_KEY: ${{ secrets.VERKADA_API_KEY }}
+          GOOGLE_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
+        run: |
+          python upstream-VerCalBot/src/main.py \
+              --verbose \
+              --config VerCalBot/mercy-config.ini \
+              --google-creds google-creds.json
